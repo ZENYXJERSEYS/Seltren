@@ -4,146 +4,100 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.PromiseImpl = exports.QueueMicrotaskImpl = void 0;
+const util_1 = require("util");
 const api_1 = require("../common/api");
 class MessageBuffer extends api_1.AbstractMessageBuffer {
-    static emptyBuffer = new Uint8Array(0);
-    asciiDecoder;
+    static emptyBuffer = Buffer.allocUnsafe(0);
     constructor(encoding = 'utf-8') {
         super(encoding);
-        this.asciiDecoder = new TextDecoder('ascii');
     }
     emptyBuffer() {
         return MessageBuffer.emptyBuffer;
     }
-    fromString(value, _encoding) {
-        return (new TextEncoder()).encode(value);
+    fromString(value, encoding) {
+        return Buffer.from(value, encoding);
     }
     toString(value, encoding) {
-        if (encoding === 'ascii') {
-            return this.asciiDecoder.decode(value);
+        if (value instanceof Buffer) {
+            return value.toString(encoding);
         }
         else {
-            return (new TextDecoder(encoding)).decode(value);
+            return new util_1.TextDecoder(encoding).decode(value);
         }
     }
     asNative(buffer, length) {
         if (length === undefined) {
-            return buffer;
+            return buffer instanceof Buffer ? buffer : Buffer.from(buffer);
         }
         else {
-            return buffer.slice(0, length);
+            return buffer instanceof Buffer ? buffer.slice(0, length) : Buffer.from(buffer, 0, length);
         }
     }
     allocNative(length) {
-        return new Uint8Array(length);
+        return Buffer.allocUnsafe(length);
     }
 }
 class ReadableStreamWrapper {
-    socket;
-    _onData;
-    _messageListener;
-    constructor(socket) {
-        this.socket = socket;
-        this._onData = new api_1.Emitter();
-        this._messageListener = (event) => {
-            const blob = event.data;
-            blob.arrayBuffer().then((buffer) => {
-                this._onData.fire(new Uint8Array(buffer));
-            }, () => {
-                (0, api_1.RAL)().console.error(`Converting blob to array buffer failed.`);
-            });
-        };
-        this.socket.addEventListener('message', this._messageListener);
+    stream;
+    constructor(stream) {
+        this.stream = stream;
     }
     onClose(listener) {
-        this.socket.addEventListener('close', listener);
-        return api_1.Disposable.create(() => this.socket.removeEventListener('close', listener));
+        this.stream.on('close', listener);
+        return api_1.Disposable.create(() => this.stream.off('close', listener));
     }
     onError(listener) {
-        this.socket.addEventListener('error', listener);
-        return api_1.Disposable.create(() => this.socket.removeEventListener('error', listener));
+        this.stream.on('error', listener);
+        return api_1.Disposable.create(() => this.stream.off('error', listener));
     }
     onEnd(listener) {
-        this.socket.addEventListener('end', listener);
-        return api_1.Disposable.create(() => this.socket.removeEventListener('end', listener));
+        this.stream.on('end', listener);
+        return api_1.Disposable.create(() => this.stream.off('end', listener));
     }
     onData(listener) {
-        return this._onData.event(listener);
+        this.stream.on('data', listener);
+        return api_1.Disposable.create(() => this.stream.off('data', listener));
     }
 }
 class WritableStreamWrapper {
-    socket;
-    constructor(socket) {
-        this.socket = socket;
+    stream;
+    constructor(stream) {
+        this.stream = stream;
     }
     onClose(listener) {
-        this.socket.addEventListener('close', listener);
-        return api_1.Disposable.create(() => this.socket.removeEventListener('close', listener));
+        this.stream.on('close', listener);
+        return api_1.Disposable.create(() => this.stream.off('close', listener));
     }
     onError(listener) {
-        this.socket.addEventListener('error', listener);
-        return api_1.Disposable.create(() => this.socket.removeEventListener('error', listener));
+        this.stream.on('error', listener);
+        return api_1.Disposable.create(() => this.stream.off('error', listener));
     }
     onEnd(listener) {
-        this.socket.addEventListener('end', listener);
-        return api_1.Disposable.create(() => this.socket.removeEventListener('end', listener));
+        this.stream.on('end', listener);
+        return api_1.Disposable.create(() => this.stream.off('end', listener));
     }
     write(data, encoding) {
-        if (typeof data === 'string') {
-            if (encoding !== undefined && encoding !== 'utf-8') {
-                throw new Error(`In a Browser environments only utf-8 text encoding is supported. But got encoding: ${encoding}`);
-            }
-            this.socket.send(data);
-        }
-        else {
-            if (data.buffer instanceof ArrayBuffer) {
-                this.socket.send(data.buffer);
+        return new Promise((resolve, reject) => {
+            const callback = (error) => {
+                if (error === undefined || error === null) {
+                    resolve();
+                }
+                else {
+                    reject(error);
+                }
+            };
+            if (typeof data === 'string') {
+                this.stream.write(data, encoding, callback);
             }
             else {
-                // We can't send a shared array buffer directly, so we need to
-                // create a copy of it.
-                this.socket.send(new Uint8Array(data.buffer).slice().buffer);
+                this.stream.write(data, callback);
             }
-        }
-        return Promise.resolve();
+        });
     }
     end() {
-        this.socket.close();
+        this.stream.end();
     }
 }
-class QueueMicrotaskImpl {
-    isDisposed;
-    constructor(callback, ...args) {
-        this.isDisposed = false;
-        queueMicrotask(() => {
-            if (!this.isDisposed) {
-                callback(...args);
-            }
-        });
-    }
-    dispose() {
-        this.isDisposed = true;
-    }
-}
-exports.QueueMicrotaskImpl = QueueMicrotaskImpl;
-class PromiseImpl {
-    isDisposed;
-    constructor(callback, ...args) {
-        this.isDisposed = false;
-        Promise.resolve().then(() => {
-            if (!this.isDisposed) {
-                callback(...args);
-            }
-        }, () => {
-        });
-    }
-    dispose() {
-        this.isDisposed = true;
-    }
-}
-exports.PromiseImpl = PromiseImpl;
-const _textEncoder = new TextEncoder();
 const _ril = Object.freeze({
     messageBuffer: Object.freeze({
         create: (encoding) => new MessageBuffer(encoding)
@@ -152,25 +106,34 @@ const _ril = Object.freeze({
         encoder: Object.freeze({
             name: 'application/json',
             encode: (msg, options) => {
-                if (options.charset !== 'utf-8') {
-                    throw new Error(`In a Browser environments only utf-8 text encoding is supported. But got encoding: ${options.charset}`);
+                try {
+                    return Promise.resolve(Buffer.from(JSON.stringify(msg, undefined, 0), options.charset));
                 }
-                return Promise.resolve(_textEncoder.encode(JSON.stringify(msg, undefined, 0)));
+                catch (err) {
+                    return Promise.reject(err);
+                }
             }
         }),
         decoder: Object.freeze({
             name: 'application/json',
             decode: (buffer, options) => {
-                if (!(buffer instanceof Uint8Array)) {
-                    throw new Error(`In a Browser environments only Uint8Arrays are supported.`);
+                try {
+                    if (buffer instanceof Buffer) {
+                        return Promise.resolve(JSON.parse(buffer.toString(options.charset)));
+                    }
+                    else {
+                        return Promise.resolve(JSON.parse(new util_1.TextDecoder(options.charset).decode(buffer)));
+                    }
                 }
-                return Promise.resolve(JSON.parse(new TextDecoder(options.charset).decode(buffer)));
+                catch (err) {
+                    return Promise.reject(err);
+                }
             }
         })
     }),
     stream: Object.freeze({
-        asReadableStream: (socket) => new ReadableStreamWrapper(socket),
-        asWritableStream: (socket) => new WritableStreamWrapper(socket)
+        asReadableStream: (stream) => new ReadableStreamWrapper(stream),
+        asWritableStream: (stream) => new WritableStreamWrapper(stream)
     }),
     console: console,
     timer: Object.freeze({
@@ -179,23 +142,13 @@ const _ril = Object.freeze({
             return { dispose: () => clearTimeout(handle) };
         },
         setImmediate(callback, ...args) {
-            // Browser don't have setImmediate and setTimeout with 0 delay of 0 can cause problems
-            // in webviews and similar environments due to throttling.
-            if (typeof globalThis.queueMicrotask === 'function') {
-                return new QueueMicrotaskImpl(callback, ...args);
-            }
-            else if (Promise !== undefined) {
-                return new PromiseImpl(callback, ...args);
-            }
-            else {
-                const handle = setTimeout(callback, 0, ...args);
-                return { dispose: () => clearTimeout(handle) };
-            }
+            const handle = setImmediate(callback, ...args);
+            return { dispose: () => clearImmediate(handle) };
         },
         setInterval(callback, ms, ...args) {
             const handle = setInterval(callback, ms, ...args);
             return { dispose: () => clearInterval(handle) };
-        },
+        }
     })
 });
 function RIL() {

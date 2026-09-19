@@ -1,0 +1,14 @@
+import { useMemo, useState } from 'react'
+
+type Props = { data: any; setData: (data: any) => void; room: any; current: any; navigate: (page: any) => void }
+const uid = () => Math.random().toString(36).slice(2, 9)
+export default function DirectMessages({ data, setData, room, current, navigate }: Props) {
+  const people = room.members.filter((member: any) => member.id !== current.id)
+  const [selected, setSelected] = useState(people[0]?.id || '')
+  const [body, setBody] = useState('')
+  const messages = room.dms || []
+  const conversation = useMemo(() => messages.filter((message: any) => (message.from === current.id && message.to === selected) || (message.from === selected && message.to === current.id)), [messages, current.id, selected])
+  const recipient = people.find((person: any) => person.id === selected)
+  const send = (event: React.FormEvent) => { event.preventDefault(); if (!body.trim() || !selected) return; const next = { id: uid(), from: current.id, to: selected, body: body.trim(), createdAt: Date.now() }; setData({ ...data, rooms: data.rooms.map((item: any) => item.id === room.id ? { ...item, dms: [...(item.dms || []), next] } : item) }); setBody('') }
+  return <main className="messages-page"><header className="workspace-header"><button className="back" onClick={() => navigate('dashboard')}>← Room</button><strong className="messages-title">Direct messages</strong><button className="quiet-button" onClick={() => navigate('team')}>My team</button></header><div className="messages-layout"><aside className="dm-people"><span className="eyebrow">PRIVATE</span><h2>People in this room</h2>{people.length ? people.map((person: any) => <button className={selected === person.id ? 'selected' : ''} key={person.id} onClick={() => setSelected(person.id)}><i style={{ background: person.color }} />{person.name}<small>{room.statuses[person.id] || 'away'}</small></button>) : <p>No other people are in this room yet.</p>}</aside><section className="dm-thread">{recipient ? <><div className="dm-head"><div><span className="eyebrow">ONE TO ONE</span><h1>{recipient.name}</h1></div><span><i className="status-dot" /> {room.statuses[recipient.id] || 'away'}</span></div><div className="dm-messages">{conversation.length ? conversation.map((message: any) => <div className={`dm-message ${message.from === current.id ? 'mine' : ''}`} key={message.id}><p>{message.body}</p><small>{message.from === current.id ? 'You' : recipient.name}</small></div>) : <div className="dm-empty">Start a private conversation with {recipient.name}. DMs are not visible in the workplace progress view.</div>}</div><form className="dm-composer" onSubmit={send}><input value={body} onChange={event => setBody(event.target.value)} placeholder={`Message ${recipient.name}…`} /><button className="enter-button">Send</button></form></> : <div className="dm-empty">Invite another person to start a private message.</div>}</section></div></main>
+}
