@@ -23,16 +23,16 @@ export interface Type {
     /** Unique identifier for this type */
     readonly id: number;
     /** Get the symbol associated with this type, if any */
-    getSymbol(): Promise<Symbol | undefined>;
+    getSymbol(): Symbol | undefined;
     /** Get the type arguments of the type alias this type was instantiated from, if any */
-    getAliasTypeArguments(): Promise<readonly Type[]>;
+    getAliasTypeArguments(): readonly Type[];
     /** Get the symbol of the type alias this type was instantiated from, if any */
-    getAliasSymbol(): Promise<Symbol | undefined>;
+    getAliasSymbol(): Symbol | undefined;
     /**
      * Get the base types of this type, or `undefined` if it is not a class or
      * interface type.
      */
-    getBaseTypes(): Promise<readonly Type[] | undefined>;
+    getBaseTypes(): readonly Type[] | undefined;
     /** Whether this type is a class or interface type */
     isClassOrInterface(): this is InterfaceType;
     /** Whether this type is a union type */
@@ -82,9 +82,9 @@ export interface Type {
  */
 export interface FreshableType extends Type {
     /** Get the fresh version of this type, if any */
-    getFreshType(): Promise<FreshableType | undefined>;
+    getFreshType(): FreshableType | undefined;
     /** Get the regular (non-fresh) version of this type, if any */
-    getRegularType(): Promise<FreshableType | undefined>;
+    getRegularType(): FreshableType | undefined;
 }
 /** Literal types: StringLiteral, NumberLiteral, BigIntLiteral, BooleanLiteral */
 export interface LiteralType extends FreshableType {
@@ -119,16 +119,16 @@ export interface ObjectType extends Type {
 /** Type references (ObjectFlags.Reference) — e.g. Array<string>, Map<K, V> */
 export interface TypeReference extends ObjectType {
     /** Get the generic target type (e.g. Array for Array<string>) */
-    getTarget(): Promise<Type>;
+    getTarget(): Type;
 }
 /** Interface types — classes and interfaces (ObjectFlags.ClassOrInterface) */
 export interface InterfaceType extends TypeReference {
     /** Get all type parameters (outer + local, excluding thisType) */
-    getTypeParameters(): Promise<readonly TypeParameter[]>;
+    getTypeParameters(): readonly TypeParameter[];
     /** Get outer type parameters from enclosing declarations */
-    getOuterTypeParameters(): Promise<readonly TypeParameter[]>;
+    getOuterTypeParameters(): readonly TypeParameter[];
     /** Get local type parameters declared on this interface/class */
-    getLocalTypeParameters(): Promise<readonly TypeParameter[]>;
+    getLocalTypeParameters(): readonly TypeParameter[];
 }
 /** Tuple types (ObjectFlags.Tuple) */
 export interface TupleType extends InterfaceType {
@@ -142,7 +142,7 @@ export interface TupleType extends InterfaceType {
 /** Union or intersection types (TypeFlags.Union | TypeFlags.Intersection) */
 export interface UnionOrIntersectionType extends Type {
     /** Get the constituent types */
-    getTypes(): Promise<readonly Type[]>;
+    getTypes(): readonly Type[];
 }
 /** Union types (TypeFlags.Union) */
 export interface UnionType extends UnionOrIntersectionType {
@@ -158,42 +158,42 @@ export interface TypeParameter extends Type {
 /** Index types — keyof T (TypeFlags.Index) */
 export interface IndexType extends Type {
     /** Get the target type T in `keyof T` */
-    getTarget(): Promise<Type>;
+    getTarget(): Type;
 }
 /** Indexed access types — T[K] (TypeFlags.IndexedAccess) */
 export interface IndexedAccessType extends Type {
     /** Get the object type T in `T[K]` */
-    getObjectType(): Promise<Type>;
+    getObjectType(): Type;
     /** Get the index type K in `T[K]` */
-    getIndexType(): Promise<Type>;
+    getIndexType(): Type;
 }
 /** Conditional types — T extends U ? X : Y (TypeFlags.Conditional) */
 export interface ConditionalType extends Type {
     /** Get the check type T in `T extends U ? X : Y` */
-    getCheckType(): Promise<Type>;
+    getCheckType(): Type;
     /** Get the extends type U in `T extends U ? X : Y` */
-    getExtendsType(): Promise<Type>;
+    getExtendsType(): Type;
     /** Get the true type X in `T extends U ? X : Y` */
-    getTrueType(): Promise<Type>;
+    getTrueType(): Type;
     /** Get the false type Y in `T extends U ? X : Y` */
-    getFalseType(): Promise<Type>;
+    getFalseType(): Type;
 }
 /** Substitution types (TypeFlags.Substitution) */
 export interface SubstitutionType extends Type {
-    getBaseType(): Promise<Type>;
-    getConstraint(): Promise<Type>;
+    getBaseType(): Type;
+    getConstraint(): Type;
 }
 /** Template literal types (TypeFlags.TemplateLiteral) */
 export interface TemplateLiteralType extends Type {
     /** Text segments (always one more than the number of type spans) */
     readonly texts: readonly string[];
     /** Get the types interspersed between text segments */
-    getTypes(): Promise<readonly Type[]>;
+    getTypes(): readonly Type[];
 }
 /** String mapping types — Uppercase<T>, Lowercase<T>, etc. (TypeFlags.StringMapping) */
 export interface StringMappingType extends Type {
     /** Get the mapped type */
-    getTarget(): Promise<Type>;
+    getTarget(): Type;
 }
 /** Intrinsic types — any, unknown, string, number, bigint, symbol, void, undefined, null, never, object (TypeFlags.Intrinsic) */
 export interface IntrinsicType extends Type {

@@ -33,11 +33,11 @@ export declare class API<FromLSP extends boolean = false> {
      * Create an API instance from an existing LSP connection's API session.
      * Use this when connecting to an API pipe provided by an LSP server via custom/initializeAPISession.
      */
-    static fromLSPConnection(options: LSPConnectionOptions): Promise<API<true>>;
+    static fromLSPConnection(options: LSPConnectionOptions): API<true>;
     private ensureInitialized;
-    parseConfigFile(file: DocumentIdentifier): Promise<ConfigResponse>;
-    updateSnapshot(params?: FromLSP extends true ? LSPUpdateSnapshotParams : UpdateSnapshotParams): Promise<Snapshot>;
-    close(): Promise<void>;
+    parseConfigFile(file: DocumentIdentifier): ConfigResponse;
+    updateSnapshot(params?: FromLSP extends true ? LSPUpdateSnapshotParams : UpdateSnapshotParams): Snapshot;
+    close(): void;
     clearSourceFileCache(): void;
     /**
      * Returns a snapshot of collected timing information for requests made
@@ -50,18 +50,18 @@ export declare class API<FromLSP extends boolean = false> {
      * `collectTiming` option; when it is not, the returned snapshot has
      * `enabled: false` and zeroed totals.
      */
-    getTimingInfo(): Promise<TimingInfo>;
+    getTimingInfo(): TimingInfo;
     /** Clears all accumulated timing totals and recent-request history, on both the client and the server. */
-    resetTimingInfo(): Promise<void>;
+    resetTimingInfo(): void;
 }
 export declare class InternalAPI {
     private client;
     private ensureInitialized;
     /** @internal */
-    constructor(client: Client, ensureInitialized: () => Promise<void>);
-    startCPUProfile(dir: string): Promise<void>;
-    stopCPUProfile(): Promise<string>;
-    saveHeapProfile(dir: string): Promise<string>;
+    constructor(client: Client, ensureInitialized: () => void);
+    startCPUProfile(dir: string): void;
+    stopCPUProfile(): string;
+    saveHeapProfile(dir: string): string;
 }
 export declare class Snapshot {
     readonly id: number;
@@ -74,9 +74,9 @@ export declare class Snapshot {
     constructor(data: UpdateSnapshotResponse, client: Client, sourceFileCache: SourceFileCache, toPath: (fileName: string) => Path, onDispose: () => void);
     getProjects(): readonly Project[];
     getProject(configFileName: string): Project | undefined;
-    getDefaultProjectForFile(file: DocumentIdentifier): Promise<Project | undefined>;
+    getDefaultProjectForFile(file: DocumentIdentifier): Project | undefined;
     [globalThis.Symbol.dispose](): void;
-    dispose(): Promise<void>;
+    dispose(): void;
     isDisposed(): boolean;
     private ensureNotDisposed;
 }
@@ -91,8 +91,8 @@ declare class SnapshotObjectRegistry {
     getOrCreateSymbol(data: SymbolResponse): Symbol;
     getSymbol(id: number): Symbol | undefined;
     clear(): void;
-    fetchSymbol(source: Symbol | Signature | Type, method: string, handle: number | undefined, projectId?: Path): Promise<Symbol>;
-    fetchSymbols(source: Symbol | Signature | Type, method: string, handles?: readonly number[], projectId?: Path): Promise<readonly Symbol[]>;
+    fetchSymbol(source: Symbol | Signature | Type, method: string, handle: number | undefined, projectId?: Path): Symbol;
+    fetchSymbols(source: Symbol | Signature | Type, method: string, handles?: readonly number[], projectId?: Path): readonly Symbol[];
 }
 declare class ProjectObjectRegistry {
     private client;
@@ -109,12 +109,12 @@ declare class ProjectObjectRegistry {
     getOrCreateSignature(data: SignatureResponse): Signature;
     getSignature(id: number): Signature | undefined;
     clear(): void;
-    fetchType<T extends Type>(source: Symbol | Signature | Type, method: string, handle: number | false | undefined): Promise<T>;
-    fetchSymbol(source: Symbol | Signature | Type, method: string, handle: number | undefined): Promise<Symbol>;
-    fetchSignature(source: Symbol | Signature | Type, method: string, handle: number | undefined): Promise<Signature>;
-    fetchTypes(source: Symbol | Signature | Type, method: string, handles?: readonly number[]): Promise<readonly Type[]>;
-    fetchSymbols(source: Symbol | Signature | Type, method: string, handles?: readonly number[]): Promise<readonly Symbol[]>;
-    fetchBaseTypes(source: Type): Promise<readonly Type[]>;
+    fetchType<T extends Type>(source: Symbol | Signature | Type, method: string, handle: number | false | undefined): T;
+    fetchSymbol(source: Symbol | Signature | Type, method: string, handle: number | undefined): Symbol;
+    fetchSignature(source: Symbol | Signature | Type, method: string, handle: number | undefined): Signature;
+    fetchTypes(source: Symbol | Signature | Type, method: string, handles?: readonly number[]): readonly Type[];
+    fetchSymbols(source: Symbol | Signature | Type, method: string, handles?: readonly number[]): readonly Symbol[];
+    fetchBaseTypes(source: Type): readonly Type[];
 }
 export declare class Project {
     readonly id: Path;
@@ -138,71 +138,71 @@ export declare class Program {
     private sourceFileMetadataCache;
     constructor(snapshotId: number, project: Project, client: Client, sourceFileCache: SourceFileCache, toPath: (fileName: string) => Path);
     getCompilerOptions(): CompilerOptions;
-    getSourceFile(file: DocumentIdentifier): Promise<SourceFile | undefined>;
-    getSourceFileNames(): Promise<readonly string[]>;
+    getSourceFile(file: DocumentIdentifier): SourceFile | undefined;
+    getSourceFileNames(): readonly string[];
     /**
      * Returns program-stored metadata for the given source file, or `undefined` if the file
      * is not part of the program. Metadata is fetched lazily per file and cached on this
      * `Program` instance.
      */
-    getSourceFileMetadata(fileName: string): Promise<SourceFileMetadata | undefined>;
+    getSourceFileMetadata(fileName: string): SourceFileMetadata | undefined;
     /**
      * Returns program-stored metadata for the source file at the given path, or `undefined`
      * if the file is not part of the program. Like {@link getSourceFileMetadata}, but skips
      * the file name to path conversion. Metadata is fetched lazily per file and cached on
      * this `Program` instance.
      */
-    getSourceFileMetadataByPath(path: Path): Promise<SourceFileMetadata | undefined>;
+    getSourceFileMetadataByPath(path: Path): SourceFileMetadata | undefined;
     private fetchSourceFileMetadata;
     /**
      * Returns whether the given source file was loaded as part of an external library
      * (e.g. a dependency resolved from `node_modules`). The underlying program metadata is
      * fetched lazily per file and cached on this `Program` instance.
      */
-    isSourceFileFromExternalLibrary(file: SourceFile): Promise<boolean>;
+    isSourceFileFromExternalLibrary(file: SourceFile): boolean;
     /**
      * Returns whether the given source file is a default library file (e.g. `lib.d.ts`).
      * The underlying program metadata is fetched lazily per file and cached on this
      * `Program` instance.
      */
-    isSourceFileDefaultLibrary(file: SourceFile): Promise<boolean>;
+    isSourceFileDefaultLibrary(file: SourceFile): boolean;
     /**
      * Get syntactic (parse) diagnostics for a specific file or all files.
      * @param file - Optional file to get diagnostics for. If omitted, returns diagnostics for all files.
      */
-    getSyntacticDiagnostics(file?: DocumentIdentifier): Promise<readonly Diagnostic[]>;
+    getSyntacticDiagnostics(file?: DocumentIdentifier): readonly Diagnostic[];
     /**
      * Get binder diagnostics for a specific file or all files.
      * @param file - Optional file to get diagnostics for. If omitted, returns diagnostics for all files.
      */
-    getBindDiagnostics(file?: DocumentIdentifier): Promise<readonly Diagnostic[]>;
+    getBindDiagnostics(file?: DocumentIdentifier): readonly Diagnostic[];
     /**
      * Get semantic (type-check) diagnostics for a specific file or all files.
      * @param file - Optional file to get diagnostics for. If omitted, returns diagnostics for all files.
      */
-    getSemanticDiagnostics(file?: DocumentIdentifier): Promise<readonly Diagnostic[]>;
+    getSemanticDiagnostics(file?: DocumentIdentifier): readonly Diagnostic[];
     /**
      * Get suggestion diagnostics for a specific file or all files.
      * @param file - Optional file to get diagnostics for. If omitted, returns diagnostics for all files.
      */
-    getSuggestionDiagnostics(file?: DocumentIdentifier): Promise<readonly Diagnostic[]>;
+    getSuggestionDiagnostics(file?: DocumentIdentifier): readonly Diagnostic[];
     /**
      * Get declaration emit diagnostics for a specific file or all files.
      * @param file - Optional file to get diagnostics for. If omitted, returns diagnostics for all files.
      */
-    getDeclarationDiagnostics(file?: DocumentIdentifier): Promise<readonly Diagnostic[]>;
+    getDeclarationDiagnostics(file?: DocumentIdentifier): readonly Diagnostic[];
     /**
      * Get program-wide diagnostics for the project, including compiler options diagnostics.
      */
-    getProgramDiagnostics(): Promise<readonly Diagnostic[]>;
+    getProgramDiagnostics(): readonly Diagnostic[];
     /**
      * Get global (non-file-specific) semantic diagnostics for the project.
      */
-    getGlobalDiagnostics(): Promise<readonly Diagnostic[]>;
+    getGlobalDiagnostics(): readonly Diagnostic[];
     /**
      * Get config file parsing diagnostics for the project.
      */
-    getConfigFileParsingDiagnostics(): Promise<readonly Diagnostic[]>;
+    getConfigFileParsingDiagnostics(): readonly Diagnostic[];
 }
 export declare class Checker {
     private snapshotId;
@@ -212,91 +212,91 @@ export declare class Checker {
     private wellKnownSymbols;
     constructor(snapshotId: number, project: Project, client: Client, objectRegistry: ProjectObjectRegistry);
     dispose(): void;
-    getSymbolAtLocation(node: Node): Promise<Symbol | undefined>;
-    getSymbolAtLocation(nodes: readonly Node[]): Promise<(Symbol | undefined)[]>;
-    getSymbolAtPosition(file: DocumentIdentifier, position: number): Promise<Symbol | undefined>;
-    getSymbolAtPosition(file: DocumentIdentifier, positions: readonly number[]): Promise<(Symbol | undefined)[]>;
-    getTypeOfSymbol(symbol: Symbol): Promise<Type | undefined>;
-    getTypeOfSymbol(symbols: readonly Symbol[]): Promise<(Type | undefined)[]>;
+    getSymbolAtLocation(node: Node): Symbol | undefined;
+    getSymbolAtLocation(nodes: readonly Node[]): (Symbol | undefined)[];
+    getSymbolAtPosition(file: DocumentIdentifier, position: number): Symbol | undefined;
+    getSymbolAtPosition(file: DocumentIdentifier, positions: readonly number[]): (Symbol | undefined)[];
+    getTypeOfSymbol(symbol: Symbol): Type | undefined;
+    getTypeOfSymbol(symbols: readonly Symbol[]): (Type | undefined)[];
     /**
      * Get the declared type of a symbol. Always returns a type; for symbols whose
      * declared type cannot be determined the checker yields the error type (use
      * {@link Type.isErrorType} to detect it).
      */
-    getDeclaredTypeOfSymbol(symbol: Symbol): Promise<Type>;
-    getReferencesToSymbolInFile(file: DocumentIdentifier, symbol: Symbol): Promise<NodeHandle[]>;
-    getReferencedSymbolsForNode(node: Node, position: number): Promise<ReferencedSymbolEntry[]>;
-    getSignatureUsage(signatureDecl: Node): Promise<SignatureUsage[]>;
-    getCompletionsAtPosition(document: string, position: number, options?: CompletionOptions): Promise<CompletionInfo | undefined>;
-    getTypeAtLocation(node: Node): Promise<Type | undefined>;
-    getTypeAtLocation(nodes: readonly Node[]): Promise<(Type | undefined)[]>;
-    getSignaturesOfType(type: Type, kind: SignatureKind): Promise<readonly Signature[]>;
-    getResolvedSignature(node: Node): Promise<Signature | undefined>;
-    getTypeAtPosition(file: DocumentIdentifier, position: number): Promise<Type | undefined>;
-    getTypeAtPosition(file: DocumentIdentifier, positions: readonly number[]): Promise<(Type | undefined)[]>;
-    resolveName(name: string, meaning: SymbolFlags, location?: Node | DocumentPosition, excludeGlobals?: boolean): Promise<Symbol | undefined>;
-    getResolvedSymbol(node: Identifier): Promise<Symbol | undefined>;
-    getContextualType(node: Expression): Promise<Type | undefined>;
-    getBaseTypeOfLiteralType(type: Type): Promise<Type | undefined>;
-    getNonNullableType(type: Type): Promise<Type | undefined>;
-    getTypeFromTypeNode(node: TypeNode): Promise<Type | undefined>;
-    getWidenedType(type: Type): Promise<Type | undefined>;
-    getParameterType(signature: Signature, index: number): Promise<Type | undefined>;
-    isArrayLikeType(type: Type): Promise<boolean>;
-    isTypeAssignableTo(source: Type, target: Type): Promise<boolean>;
-    getShorthandAssignmentValueSymbol(node: Node): Promise<Symbol | undefined>;
+    getDeclaredTypeOfSymbol(symbol: Symbol): Type;
+    getReferencesToSymbolInFile(file: DocumentIdentifier, symbol: Symbol): NodeHandle[];
+    getReferencedSymbolsForNode(node: Node, position: number): ReferencedSymbolEntry[];
+    getSignatureUsage(signatureDecl: Node): SignatureUsage[];
+    getCompletionsAtPosition(document: string, position: number, options?: CompletionOptions): CompletionInfo | undefined;
+    getTypeAtLocation(node: Node): Type | undefined;
+    getTypeAtLocation(nodes: readonly Node[]): (Type | undefined)[];
+    getSignaturesOfType(type: Type, kind: SignatureKind): readonly Signature[];
+    getResolvedSignature(node: Node): Signature | undefined;
+    getTypeAtPosition(file: DocumentIdentifier, position: number): Type | undefined;
+    getTypeAtPosition(file: DocumentIdentifier, positions: readonly number[]): (Type | undefined)[];
+    resolveName(name: string, meaning: SymbolFlags, location?: Node | DocumentPosition, excludeGlobals?: boolean): Symbol | undefined;
+    getResolvedSymbol(node: Identifier): Symbol | undefined;
+    getContextualType(node: Expression): Type | undefined;
+    getBaseTypeOfLiteralType(type: Type): Type | undefined;
+    getNonNullableType(type: Type): Type | undefined;
+    getTypeFromTypeNode(node: TypeNode): Type | undefined;
+    getWidenedType(type: Type): Type | undefined;
+    getParameterType(signature: Signature, index: number): Type | undefined;
+    isArrayLikeType(type: Type): boolean;
+    isTypeAssignableTo(source: Type, target: Type): boolean;
+    getShorthandAssignmentValueSymbol(node: Node): Symbol | undefined;
     /**
      * Get the type of a symbol as narrowed at a specific location. Always returns
      * a type; for symbols whose type cannot be determined the checker yields the
      * error type (use {@link Type.isErrorType} to detect it).
      */
-    getTypeOfSymbolAtLocation(symbol: Symbol, location: Node): Promise<Type>;
+    getTypeOfSymbolAtLocation(symbol: Symbol, location: Node): Type;
     private getIntrinsicType;
-    getAnyType(): Promise<Type>;
-    getStringType(): Promise<Type>;
-    getNumberType(): Promise<Type>;
-    getBooleanType(): Promise<Type>;
-    getVoidType(): Promise<Type>;
-    getUndefinedType(): Promise<Type>;
-    getNullType(): Promise<Type>;
-    getNeverType(): Promise<Type>;
-    getUnknownType(): Promise<Type>;
-    getBigIntType(): Promise<Type>;
-    getESSymbolType(): Promise<Type>;
-    typeToTypeNode(type: Type, enclosingDeclaration?: Node, flags?: number): Promise<TypeNode | undefined>;
-    signatureToSignatureDeclaration(signature: Signature, kind: SyntaxKind, enclosingDeclaration?: Node, flags?: NodeBuilderFlags): Promise<Node | undefined>;
-    typeToString(type: Type, enclosingDeclaration?: Node, flags?: number): Promise<string>;
-    isContextSensitive(node: Node): Promise<boolean>;
-    isArrayType(type: Type): Promise<boolean>;
-    isTupleType(type: Type): Promise<boolean>;
-    getReturnTypeOfSignature(signature: Signature): Promise<Type | undefined>;
-    getRestTypeOfSignature(signature: Signature): Promise<Type | undefined>;
-    getTypePredicateOfSignature(signature: Signature): Promise<TypePredicate | undefined>;
+    getAnyType(): Type;
+    getStringType(): Type;
+    getNumberType(): Type;
+    getBooleanType(): Type;
+    getVoidType(): Type;
+    getUndefinedType(): Type;
+    getNullType(): Type;
+    getNeverType(): Type;
+    getUnknownType(): Type;
+    getBigIntType(): Type;
+    getESSymbolType(): Type;
+    typeToTypeNode(type: Type, enclosingDeclaration?: Node, flags?: number): TypeNode | undefined;
+    signatureToSignatureDeclaration(signature: Signature, kind: SyntaxKind, enclosingDeclaration?: Node, flags?: NodeBuilderFlags): Node | undefined;
+    typeToString(type: Type, enclosingDeclaration?: Node, flags?: number): string;
+    isContextSensitive(node: Node): boolean;
+    isArrayType(type: Type): boolean;
+    isTupleType(type: Type): boolean;
+    getReturnTypeOfSignature(signature: Signature): Type | undefined;
+    getRestTypeOfSignature(signature: Signature): Type | undefined;
+    getTypePredicateOfSignature(signature: Signature): TypePredicate | undefined;
     /**
      * Get the base types of a class or interface type. A type with no base types
      * yields an empty array.
      */
-    getBaseTypes(type: InterfaceType): Promise<readonly Type[]>;
-    getApparentType(type: Type): Promise<Type | undefined>;
-    getPropertiesOfType(type: Type): Promise<readonly Symbol[]>;
-    getIndexInfosOfType(type: Type): Promise<readonly IndexInfo[]>;
+    getBaseTypes(type: InterfaceType): readonly Type[];
+    getApparentType(type: Type): Type | undefined;
+    getPropertiesOfType(type: Type): readonly Symbol[];
+    getIndexInfosOfType(type: Type): readonly IndexInfo[];
     /**
      * Get the constraint of a type parameter (the `T` in `<U extends T>`), or
      * undefined if it has none.
      */
-    getConstraintOfTypeParameter(type: TypeParameter): Promise<Type | undefined>;
-    getBaseConstraintOfType(type: Type): Promise<Type | undefined>;
-    getPropertyOfType(type: Type, name: string): Promise<Symbol | undefined>;
-    getConstantValue(node: Node): Promise<string | number | undefined>;
-    getSignatureFromDeclaration(node: Node): Promise<Signature | undefined>;
-    getExportSpecifierLocalTargetSymbol(node: Node): Promise<Symbol | undefined>;
+    getConstraintOfTypeParameter(type: TypeParameter): Type | undefined;
+    getBaseConstraintOfType(type: Type): Type | undefined;
+    getPropertyOfType(type: Type, name: string): Symbol | undefined;
+    getConstantValue(node: Node): string | number | undefined;
+    getSignatureFromDeclaration(node: Node): Signature | undefined;
+    getExportSpecifierLocalTargetSymbol(node: Node): Symbol | undefined;
     /**
      * Follow all aliases to get the original symbol. Always returns a symbol; for
      * an unresolved alias the checker yields the unknown symbol (use
      * {@link Checker.isUnknownSymbol} to detect it).
      */
-    getAliasedSymbol(symbol: Symbol): Promise<Symbol>;
-    getImmediateAliasedSymbol(symbol: Symbol): Promise<Symbol | undefined>;
+    getAliasedSymbol(symbol: Symbol): Symbol;
+    getImmediateAliasedSymbol(symbol: Symbol): Symbol | undefined;
     /**
      * Fetch (once, then cache) the handle ids of the per-checker singleton
      * symbols (unknown, undefined, arguments). These ids are stable for the life
@@ -308,23 +308,23 @@ export declare class Checker {
      * Returns `true` if the symbol is the checker's "unknown" symbol (e.g. the
      * result of {@link Checker.getAliasedSymbol} on an unresolved alias).
      */
-    isUnknownSymbol(symbol: Symbol): Promise<boolean>;
+    isUnknownSymbol(symbol: Symbol): boolean;
     /**
      * Returns `true` if the symbol is the checker's "undefined" symbol.
      */
-    isUndefinedSymbol(symbol: Symbol): Promise<boolean>;
+    isUndefinedSymbol(symbol: Symbol): boolean;
     /**
      * Returns `true` if the symbol is the checker's "arguments" symbol.
      */
-    isArgumentsSymbol(symbol: Symbol): Promise<boolean>;
-    getExportsOfModule(symbol: Symbol): Promise<readonly Symbol[]>;
-    getMemberInModuleExports(symbol: Symbol, name: string): Promise<Symbol | undefined>;
-    getJsDocTagsOfSymbol(symbol: Symbol): Promise<readonly JSDocTagInfo[]>;
-    getDocumentationCommentOfSymbol(symbol: Symbol): Promise<string>;
+    isArgumentsSymbol(symbol: Symbol): boolean;
+    getExportsOfModule(symbol: Symbol): readonly Symbol[];
+    getMemberInModuleExports(symbol: Symbol, name: string): Symbol | undefined;
+    getJsDocTagsOfSymbol(symbol: Symbol): readonly JSDocTagInfo[];
+    getDocumentationCommentOfSymbol(symbol: Symbol): string;
     /**
      * Get the type arguments of a type reference (e.g. the `string` in `Array<string>`).
      */
-    getTypeArguments(type: TypeReference): Promise<readonly Type[]>;
+    getTypeArguments(type: TypeReference): readonly Type[];
 }
 export interface PrintNodeOptions {
     preserveSourceNewlines?: boolean | undefined;
@@ -334,7 +334,7 @@ export interface PrintNodeOptions {
 export declare class Emitter {
     private client;
     constructor(client: Client);
-    printNode(node: Node, options?: PrintNodeOptions): Promise<string>;
+    printNode(node: Node, options?: PrintNodeOptions): string;
 }
 export declare class NodeHandle {
     /**
@@ -352,7 +352,7 @@ export declare class NodeHandle {
      * and looking up the node by index. If no project is passed, the project that produced
      * the handle is used.
      */
-    resolve(project?: Project): Promise<Node | undefined>;
+    resolve(project?: Project): Node | undefined;
 }
 /** A symbol definition paired with all of its reference nodes. */
 export interface ReferencedSymbolEntry {
@@ -392,21 +392,21 @@ export declare class Symbol {
     private membersCache;
     private exportsCache;
     constructor(data: SymbolResponse, objectRegistry: SnapshotObjectRegistry);
-    getParent(): Promise<Symbol | undefined>;
+    getParent(): Symbol | undefined;
     /**
      * Get this symbol's members keyed by escaped name. The result is cached on
      * the symbol, so repeated calls do not round-trip to the server.
      */
-    getMembers(): Promise<ReadonlyMap<__String, Symbol>>;
+    getMembers(): ReadonlyMap<__String, Symbol>;
     /**
      * Get this symbol's exports keyed by escaped name. The result is cached on
      * the symbol, so repeated calls do not round-trip to the server.
      */
-    getExports(): Promise<ReadonlyMap<__String, Symbol>>;
+    getExports(): ReadonlyMap<__String, Symbol>;
     private fetchSymbolTable;
-    getExportSymbol(): Promise<Symbol>;
-    getJsDocTags(checker: Checker): Promise<readonly JSDocTagInfo[]>;
-    getDocumentationComment(checker: Checker): Promise<string>;
+    getExportSymbol(): Symbol;
+    getJsDocTags(checker: Checker): readonly JSDocTagInfo[];
+    getDocumentationComment(checker: Checker): string;
 }
 declare class TypeObject implements Type {
     private objectRegistry;
@@ -438,29 +438,29 @@ declare class TypeObject implements Type {
     private trueType;
     private falseType;
     constructor(data: TypeResponse, objectRegistry: ProjectObjectRegistry);
-    getSymbol(): Promise<Symbol | undefined>;
-    getAliasSymbol(): Promise<Symbol | undefined>;
-    getTarget(): Promise<Type>;
-    getFreshType(): Promise<FreshableType | undefined>;
-    getRegularType(): Promise<FreshableType | undefined>;
-    getTypes(): Promise<readonly Type[] | undefined>;
-    getTypeParameters(): Promise<readonly TypeParameter[]>;
-    getOuterTypeParameters(): Promise<readonly TypeParameter[]>;
-    getLocalTypeParameters(): Promise<readonly TypeParameter[]>;
-    getAliasTypeArguments(): Promise<readonly Type[]>;
-    getObjectType(): Promise<Type>;
-    getIndexType(): Promise<Type>;
-    getCheckType(): Promise<Type>;
-    getExtendsType(): Promise<Type>;
-    getBaseType(): Promise<Type>;
-    getConstraint(): Promise<Type>;
-    getTrueType(): Promise<Type>;
-    getFalseType(): Promise<Type>;
+    getSymbol(): Symbol | undefined;
+    getAliasSymbol(): Symbol | undefined;
+    getTarget(): Type;
+    getFreshType(): FreshableType | undefined;
+    getRegularType(): FreshableType | undefined;
+    getTypes(): readonly Type[] | undefined;
+    getTypeParameters(): readonly TypeParameter[];
+    getOuterTypeParameters(): readonly TypeParameter[];
+    getLocalTypeParameters(): readonly TypeParameter[];
+    getAliasTypeArguments(): readonly Type[];
+    getObjectType(): Type;
+    getIndexType(): Type;
+    getCheckType(): Type;
+    getExtendsType(): Type;
+    getBaseType(): Type;
+    getConstraint(): Type;
+    getTrueType(): Type;
+    getFalseType(): Type;
     /**
      * Get the base types of this type. Returns `undefined` for any type that is
      * not a class or interface.
      */
-    getBaseTypes(): Promise<readonly Type[] | undefined>;
+    getBaseTypes(): readonly Type[] | undefined;
     isClassOrInterface(): this is InterfaceType;
     isUnionType(): this is UnionType;
     isIntersectionType(): this is IntersectionType;
@@ -518,10 +518,10 @@ export declare class Signature {
     readonly thisParameter?: number | undefined;
     readonly target?: number | undefined;
     constructor(data: SignatureResponse, project: Project, objectRegistry: ProjectObjectRegistry);
-    getTypeParameters(): Promise<readonly TypeParameter[]>;
-    getParameters(): Promise<readonly Symbol[]>;
-    getThisParameter(): Promise<Symbol | undefined>;
-    getTarget(): Promise<Signature | undefined>;
+    getTypeParameters(): readonly TypeParameter[];
+    getParameters(): readonly Symbol[];
+    getThisParameter(): Symbol | undefined;
+    getTarget(): Signature | undefined;
     get hasRestParameter(): boolean;
     get isConstruct(): boolean;
     get isAbstract(): boolean;

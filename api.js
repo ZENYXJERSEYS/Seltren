@@ -1,3 +1,11 @@
+//
+// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+// !!! THIS FILE IS AUTO-GENERATED - DO NOT EDIT !!!
+// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+//
+// Source: src/api/async/api.ts
+// Regenerate: npm run generate (from _packages/native-preview)
+//
 /// <reference path="../node/node.ts" preserve="true" />
 import { CompletionItemKind } from "#enums/completionItemKind";
 import { DiagnosticCategory } from "#enums/diagnosticCategory";
@@ -37,28 +45,28 @@ export class API {
      * Create an API instance from an existing LSP connection's API session.
      * Use this when connecting to an API pipe provided by an LSP server via custom/initializeAPISession.
      */
-    static async fromLSPConnection(options) {
+    static fromLSPConnection(options) {
         const api = new API(options);
-        await api.ensureInitialized();
+        api.ensureInitialized();
         return api;
     }
-    async ensureInitialized() {
+    ensureInitialized() {
         if (!this.initialized) {
-            const response = await this.client.apiRequest("initialize", null);
+            const response = this.client.apiRequest("initialize", null);
             const getCanonicalFileName = createGetCanonicalFileName(response.useCaseSensitiveFileNames);
             const currentDirectory = response.currentDirectory;
             this.toPath = (fileName) => toPath(fileName, currentDirectory, getCanonicalFileName);
             this.initialized = true;
         }
     }
-    async parseConfigFile(file) {
-        await this.ensureInitialized();
+    parseConfigFile(file) {
+        this.ensureInitialized();
         return this.client.apiRequest("parseConfigFile", { file });
     }
-    async updateSnapshot(params) {
-        await this.ensureInitialized();
+    updateSnapshot(params) {
+        this.ensureInitialized();
         const requestParams = toUpdateSnapshotRequest(params);
-        const data = await this.client.apiRequest("updateSnapshot", requestParams);
+        const data = this.client.apiRequest("updateSnapshot", requestParams);
         // Retain cached source files from previous snapshot for unchanged files
         if (this.latestSnapshot) {
             this.sourceFileCache.retainForSnapshot(data.snapshot, this.latestSnapshot.id, data.changes);
@@ -76,17 +84,17 @@ export class API {
         this.activeSnapshots.add(snapshot);
         return snapshot;
     }
-    async close() {
+    close() {
         // Dispose all active snapshots
         for (const snapshot of [...this.activeSnapshots]) {
-            await snapshot.dispose();
+            snapshot.dispose();
         }
         // Release the latest snapshot's cache refs if still held
         if (this.latestSnapshot) {
             this.sourceFileCache.releaseSnapshot(this.latestSnapshot.id);
             this.latestSnapshot = undefined;
         }
-        await this.client.close();
+        this.client.close();
         this.sourceFileCache.clear();
     }
     clearSourceFileCache() {
@@ -119,18 +127,18 @@ export class InternalAPI {
         this.client = client;
         this.ensureInitialized = ensureInitialized;
     }
-    async startCPUProfile(dir) {
-        await this.ensureInitialized();
-        await this.client.apiRequest("startCPUProfile", { dir });
+    startCPUProfile(dir) {
+        this.ensureInitialized();
+        this.client.apiRequest("startCPUProfile", { dir });
     }
-    async stopCPUProfile() {
-        await this.ensureInitialized();
-        const result = await this.client.apiRequest("stopCPUProfile", null);
+    stopCPUProfile() {
+        this.ensureInitialized();
+        const result = this.client.apiRequest("stopCPUProfile", null);
         return result.file;
     }
-    async saveHeapProfile(dir) {
-        await this.ensureInitialized();
-        const result = await this.client.apiRequest("saveHeapProfile", { dir });
+    saveHeapProfile(dir) {
+        this.ensureInitialized();
+        const result = this.client.apiRequest("saveHeapProfile", { dir });
         return result.file;
     }
 }
@@ -162,9 +170,9 @@ export class Snapshot {
         this.ensureNotDisposed();
         return this.projectMap.get(this.toPath(configFileName));
     }
-    async getDefaultProjectForFile(file) {
+    getDefaultProjectForFile(file) {
         this.ensureNotDisposed();
-        const data = await this.client.apiRequest("getDefaultProjectForFile", {
+        const data = this.client.apiRequest("getDefaultProjectForFile", {
             snapshot: this.id,
             file,
         });
@@ -175,7 +183,7 @@ export class Snapshot {
     [globalThis.Symbol.dispose]() {
         this.dispose();
     }
-    async dispose() {
+    dispose() {
         if (this.disposed)
             return;
         this.disposed = true;
@@ -185,7 +193,7 @@ export class Snapshot {
         this.projectMap.clear();
         this.snapshotRegistry.clear();
         this.onDispose();
-        await this.client.apiRequest("release", { snapshot: this.id });
+        this.client.apiRequest("release", { snapshot: this.id });
     }
     isDisposed() {
         return this.disposed;
@@ -224,13 +232,13 @@ class SnapshotObjectRegistry {
     clear() {
         this.symbols.clear();
     }
-    async fetchSymbol(source, method, handle, projectId) {
+    fetchSymbol(source, method, handle, projectId) {
         if (!handle)
             return undefined;
         const cached = this.getSymbol(handle);
         if (cached)
             return cached;
-        const data = await this.client.apiRequest(method, {
+        const data = this.client.apiRequest(method, {
             snapshot: this.snapshotId,
             project: projectId,
             objectId: source.id,
@@ -239,7 +247,7 @@ class SnapshotObjectRegistry {
             throw new Error(`${method} returned null symbol for ${source.constructor.name} ${source.id}`);
         return this.getOrCreateSymbol(data);
     }
-    async fetchSymbols(source, method, handles, projectId) {
+    fetchSymbols(source, method, handles, projectId) {
         if (handles) {
             const result = new Array(handles.length);
             let allCached = true;
@@ -254,7 +262,7 @@ class SnapshotObjectRegistry {
             if (allCached)
                 return result;
         }
-        const symbolData = await this.client.apiRequest(method, {
+        const symbolData = this.client.apiRequest(method, {
             snapshot: this.snapshotId,
             project: projectId,
             objectId: source.id,
@@ -310,7 +318,7 @@ class ProjectObjectRegistry {
         this.types.clear();
         this.signatures.clear();
     }
-    async fetchType(source, method, handle) {
+    fetchType(source, method, handle) {
         if (handle !== false) {
             if (!handle)
                 return undefined;
@@ -318,7 +326,7 @@ class ProjectObjectRegistry {
             if (cached)
                 return cached;
         }
-        const data = await this.client.apiRequest(method, {
+        const data = this.client.apiRequest(method, {
             snapshot: this.snapshotId,
             project: this.project.id,
             objectId: source.id,
@@ -327,16 +335,16 @@ class ProjectObjectRegistry {
             throw new Error(`${method} returned null type for ${source.constructor.name} ${source.id}`);
         return this.getOrCreateType(data);
     }
-    async fetchSymbol(source, method, handle) {
+    fetchSymbol(source, method, handle) {
         return this.snapshotRegistry.fetchSymbol(source, method, handle, this.project.id);
     }
-    async fetchSignature(source, method, handle) {
+    fetchSignature(source, method, handle) {
         if (!handle)
             return undefined;
         const cached = this.getSignature(handle);
         if (cached)
             return cached;
-        const data = await this.client.apiRequest(method, {
+        const data = this.client.apiRequest(method, {
             snapshot: this.snapshotId,
             project: this.project.id,
             objectId: source.id,
@@ -345,7 +353,7 @@ class ProjectObjectRegistry {
             throw new Error(`${method} returned null signature for ${source.constructor.name} ${source.id}`);
         return this.getOrCreateSignature(data);
     }
-    async fetchTypes(source, method, handles) {
+    fetchTypes(source, method, handles) {
         if (handles) {
             const result = new Array(handles.length);
             let allCached = true;
@@ -360,7 +368,7 @@ class ProjectObjectRegistry {
             if (allCached)
                 return result;
         }
-        const typesData = await this.client.apiRequest(method, {
+        const typesData = this.client.apiRequest(method, {
             snapshot: this.snapshotId,
             project: this.project.id,
             objectId: source.id,
@@ -370,13 +378,13 @@ class ProjectObjectRegistry {
         else
             return typesData.map(data => this.getOrCreateType(data));
     }
-    async fetchSymbols(source, method, handles) {
+    fetchSymbols(source, method, handles) {
         return this.snapshotRegistry.fetchSymbols(source, method, handles, this.project.id);
     }
     // getBaseTypes is a checker-level endpoint keyed by `type` (not `objectId`),
     // so it cannot go through fetchTypes. This helper reuses that server method.
-    async fetchBaseTypes(source) {
-        const typesData = await this.client.apiRequest("getBaseTypes", {
+    fetchBaseTypes(source) {
+        const typesData = this.client.apiRequest("getBaseTypes", {
             snapshot: this.snapshotId,
             project: this.project.id,
             type: source.id,
@@ -428,7 +436,7 @@ export class Program {
     getCompilerOptions() {
         return this.project.compilerOptions;
     }
-    async getSourceFile(file) {
+    getSourceFile(file) {
         const fileName = resolveFileName(file);
         const path = this.toPath(fileName);
         // Check if we already have a retained cache entry for this (snapshot, project) pair
@@ -437,7 +445,7 @@ export class Program {
             return retained;
         }
         // Fetch from server
-        const binaryData = await this.client.apiRequestBinary("getSourceFile", {
+        const binaryData = this.client.apiRequestBinary("getSourceFile", {
             snapshot: this.snapshotId,
             project: this.project.id,
             file,
@@ -452,8 +460,8 @@ export class Program {
         const sourceFile = new RemoteSourceFile(binaryData, this.decoder, this.client.getTimingCollector());
         return this.sourceFileCache.set(path, sourceFile, parseOptionsKey, contentHash, this.snapshotId, this.project.id);
     }
-    async getSourceFileNames() {
-        const data = await this.client.apiRequest("getSourceFileNames", {
+    getSourceFileNames() {
+        const data = this.client.apiRequest("getSourceFileNames", {
             snapshot: this.snapshotId,
             project: this.project.id,
         });
@@ -481,8 +489,8 @@ export class Program {
         }
         return metadata;
     }
-    async fetchSourceFileMetadata(path) {
-        const data = await this.client.apiRequest("getSourceFileMetadata", {
+    fetchSourceFileMetadata(path) {
+        const data = this.client.apiRequest("getSourceFileMetadata", {
             snapshot: this.snapshotId,
             project: this.project.id,
             file: path,
@@ -494,8 +502,8 @@ export class Program {
      * (e.g. a dependency resolved from `node_modules`). The underlying program metadata is
      * fetched lazily per file and cached on this `Program` instance.
      */
-    async isSourceFileFromExternalLibrary(file) {
-        const metadata = await this.getSourceFileMetadataByPath(file.path);
+    isSourceFileFromExternalLibrary(file) {
+        const metadata = this.getSourceFileMetadataByPath(file.path);
         return metadata?.isFromExternalLibrary ?? false;
     }
     /**
@@ -503,16 +511,16 @@ export class Program {
      * The underlying program metadata is fetched lazily per file and cached on this
      * `Program` instance.
      */
-    async isSourceFileDefaultLibrary(file) {
-        const metadata = await this.getSourceFileMetadataByPath(file.path);
+    isSourceFileDefaultLibrary(file) {
+        const metadata = this.getSourceFileMetadataByPath(file.path);
         return metadata?.isDefaultLibrary ?? false;
     }
     /**
      * Get syntactic (parse) diagnostics for a specific file or all files.
      * @param file - Optional file to get diagnostics for. If omitted, returns diagnostics for all files.
      */
-    async getSyntacticDiagnostics(file) {
-        const data = await this.client.apiRequest("getSyntacticDiagnostics", {
+    getSyntacticDiagnostics(file) {
+        const data = this.client.apiRequest("getSyntacticDiagnostics", {
             snapshot: this.snapshotId,
             project: this.project.id,
             ...(file !== undefined ? { file } : {}),
@@ -523,8 +531,8 @@ export class Program {
      * Get binder diagnostics for a specific file or all files.
      * @param file - Optional file to get diagnostics for. If omitted, returns diagnostics for all files.
      */
-    async getBindDiagnostics(file) {
-        const data = await this.client.apiRequest("getBindDiagnostics", {
+    getBindDiagnostics(file) {
+        const data = this.client.apiRequest("getBindDiagnostics", {
             snapshot: this.snapshotId,
             project: this.project.id,
             ...(file !== undefined ? { file } : {}),
@@ -535,8 +543,8 @@ export class Program {
      * Get semantic (type-check) diagnostics for a specific file or all files.
      * @param file - Optional file to get diagnostics for. If omitted, returns diagnostics for all files.
      */
-    async getSemanticDiagnostics(file) {
-        const data = await this.client.apiRequest("getSemanticDiagnostics", {
+    getSemanticDiagnostics(file) {
+        const data = this.client.apiRequest("getSemanticDiagnostics", {
             snapshot: this.snapshotId,
             project: this.project.id,
             ...(file !== undefined ? { file } : {}),
@@ -547,8 +555,8 @@ export class Program {
      * Get suggestion diagnostics for a specific file or all files.
      * @param file - Optional file to get diagnostics for. If omitted, returns diagnostics for all files.
      */
-    async getSuggestionDiagnostics(file) {
-        const data = await this.client.apiRequest("getSuggestionDiagnostics", {
+    getSuggestionDiagnostics(file) {
+        const data = this.client.apiRequest("getSuggestionDiagnostics", {
             snapshot: this.snapshotId,
             project: this.project.id,
             ...(file !== undefined ? { file } : {}),
@@ -559,8 +567,8 @@ export class Program {
      * Get declaration emit diagnostics for a specific file or all files.
      * @param file - Optional file to get diagnostics for. If omitted, returns diagnostics for all files.
      */
-    async getDeclarationDiagnostics(file) {
-        const data = await this.client.apiRequest("getDeclarationDiagnostics", {
+    getDeclarationDiagnostics(file) {
+        const data = this.client.apiRequest("getDeclarationDiagnostics", {
             snapshot: this.snapshotId,
             project: this.project.id,
             ...(file !== undefined ? { file } : {}),
@@ -570,8 +578,8 @@ export class Program {
     /**
      * Get program-wide diagnostics for the project, including compiler options diagnostics.
      */
-    async getProgramDiagnostics() {
-        const data = await this.client.apiRequest("getProgramDiagnostics", {
+    getProgramDiagnostics() {
+        const data = this.client.apiRequest("getProgramDiagnostics", {
             snapshot: this.snapshotId,
             project: this.project.id,
         });
@@ -580,8 +588,8 @@ export class Program {
     /**
      * Get global (non-file-specific) semantic diagnostics for the project.
      */
-    async getGlobalDiagnostics() {
-        const data = await this.client.apiRequest("getGlobalDiagnostics", {
+    getGlobalDiagnostics() {
+        const data = this.client.apiRequest("getGlobalDiagnostics", {
             snapshot: this.snapshotId,
             project: this.project.id,
         });
@@ -590,8 +598,8 @@ export class Program {
     /**
      * Get config file parsing diagnostics for the project.
      */
-    async getConfigFileParsingDiagnostics() {
-        const data = await this.client.apiRequest("getConfigFileParsingDiagnostics", {
+    getConfigFileParsingDiagnostics() {
+        const data = this.client.apiRequest("getConfigFileParsingDiagnostics", {
             snapshot: this.snapshotId,
             project: this.project.id,
         });
@@ -613,25 +621,25 @@ export class Checker {
     dispose() {
         this.objectRegistry.clear();
     }
-    async getSymbolAtLocation(nodeOrNodes) {
+    getSymbolAtLocation(nodeOrNodes) {
         if (Array.isArray(nodeOrNodes)) {
-            const data = await this.client.apiRequest("getSymbolsAtLocations", {
+            const data = this.client.apiRequest("getSymbolsAtLocations", {
                 snapshot: this.snapshotId,
                 project: this.project.id,
                 locations: nodeOrNodes.map(node => getNodeId(node)),
             });
             return data.map(d => d ? this.objectRegistry.getOrCreateSymbol(d) : undefined);
         }
-        const data = await this.client.apiRequest("getSymbolAtLocation", {
+        const data = this.client.apiRequest("getSymbolAtLocation", {
             snapshot: this.snapshotId,
             project: this.project.id,
             location: getNodeId(nodeOrNodes),
         });
         return data ? this.objectRegistry.getOrCreateSymbol(data) : undefined;
     }
-    async getSymbolAtPosition(file, positionOrPositions) {
+    getSymbolAtPosition(file, positionOrPositions) {
         if (typeof positionOrPositions === "number") {
-            const data = await this.client.apiRequest("getSymbolAtPosition", {
+            const data = this.client.apiRequest("getSymbolAtPosition", {
                 snapshot: this.snapshotId,
                 project: this.project.id,
                 file,
@@ -639,7 +647,7 @@ export class Checker {
             });
             return data ? this.objectRegistry.getOrCreateSymbol(data) : undefined;
         }
-        const data = await this.client.apiRequest("getSymbolsAtPositions", {
+        const data = this.client.apiRequest("getSymbolsAtPositions", {
             snapshot: this.snapshotId,
             project: this.project.id,
             file,
@@ -647,16 +655,16 @@ export class Checker {
         });
         return data.map(d => d ? this.objectRegistry.getOrCreateSymbol(d) : undefined);
     }
-    async getTypeOfSymbol(symbolOrSymbols) {
+    getTypeOfSymbol(symbolOrSymbols) {
         if (Array.isArray(symbolOrSymbols)) {
-            const data = await this.client.apiRequest("getTypesOfSymbols", {
+            const data = this.client.apiRequest("getTypesOfSymbols", {
                 snapshot: this.snapshotId,
                 project: this.project.id,
                 symbols: symbolOrSymbols.map(s => s.id),
             });
             return data.map(d => d ? this.objectRegistry.getOrCreateType(d) : undefined);
         }
-        const data = await this.client.apiRequest("getTypeOfSymbol", {
+        const data = this.client.apiRequest("getTypeOfSymbol", {
             snapshot: this.snapshotId,
             project: this.project.id,
             symbol: symbolOrSymbols.id,
@@ -668,8 +676,8 @@ export class Checker {
      * declared type cannot be determined the checker yields the error type (use
      * {@link Type.isErrorType} to detect it).
      */
-    async getDeclaredTypeOfSymbol(symbol) {
-        const data = await this.client.apiRequest("getDeclaredTypeOfSymbol", {
+    getDeclaredTypeOfSymbol(symbol) {
+        const data = this.client.apiRequest("getDeclaredTypeOfSymbol", {
             snapshot: this.snapshotId,
             project: this.project.id,
             symbol: symbol.id,
@@ -678,8 +686,8 @@ export class Checker {
             throw new Error(`getDeclaredTypeOfSymbol returned no type for symbol ${symbol.id}`);
         return this.objectRegistry.getOrCreateType(data);
     }
-    async getReferencesToSymbolInFile(file, symbol) {
-        const data = await this.client.apiRequest("getReferencesToSymbolInFile", {
+    getReferencesToSymbolInFile(file, symbol) {
+        const data = this.client.apiRequest("getReferencesToSymbolInFile", {
             snapshot: this.snapshotId,
             project: this.project.id,
             file,
@@ -687,8 +695,8 @@ export class Checker {
         });
         return (data ?? []).map(h => new NodeHandle(h, this.project));
     }
-    async getReferencedSymbolsForNode(node, position) {
-        const data = await this.client.apiRequest("getReferencedSymbolsForNode", {
+    getReferencedSymbolsForNode(node, position) {
+        const data = this.client.apiRequest("getReferencedSymbolsForNode", {
             snapshot: this.snapshotId,
             project: this.project.id,
             node: getNodeId(node),
@@ -700,8 +708,8 @@ export class Checker {
             references: (entry.references ?? []).map(h => new NodeHandle(h, this.project)),
         }));
     }
-    async getSignatureUsage(signatureDecl) {
-        const data = await this.client.apiRequest("getSignatureUsages", {
+    getSignatureUsage(signatureDecl) {
+        const data = this.client.apiRequest("getSignatureUsages", {
             snapshot: this.snapshotId,
             project: this.project.id,
             signatureDecl: getNodeId(signatureDecl),
@@ -711,8 +719,8 @@ export class Checker {
             call: entry.call ? new NodeHandle(entry.call, this.project) : undefined,
         }));
     }
-    async getCompletionsAtPosition(document, position, options) {
-        const data = await this.client.apiRequest("getCompletionsAtPosition", {
+    getCompletionsAtPosition(document, position, options) {
+        const data = this.client.apiRequest("getCompletionsAtPosition", {
             snapshot: this.snapshotId,
             project: this.project.id,
             file: document,
@@ -730,24 +738,24 @@ export class Checker {
             })),
         };
     }
-    async getTypeAtLocation(nodeOrNodes) {
+    getTypeAtLocation(nodeOrNodes) {
         if (Array.isArray(nodeOrNodes)) {
-            const data = await this.client.apiRequest("getTypeAtLocations", {
+            const data = this.client.apiRequest("getTypeAtLocations", {
                 snapshot: this.snapshotId,
                 project: this.project.id,
                 locations: nodeOrNodes.map(node => getNodeId(node)),
             });
             return data.map(d => d ? this.objectRegistry.getOrCreateType(d) : undefined);
         }
-        const data = await this.client.apiRequest("getTypeAtLocation", {
+        const data = this.client.apiRequest("getTypeAtLocation", {
             snapshot: this.snapshotId,
             project: this.project.id,
             location: getNodeId(nodeOrNodes),
         });
         return data ? this.objectRegistry.getOrCreateType(data) : undefined;
     }
-    async getSignaturesOfType(type, kind) {
-        const data = await this.client.apiRequest("getSignaturesOfType", {
+    getSignaturesOfType(type, kind) {
+        const data = this.client.apiRequest("getSignaturesOfType", {
             snapshot: this.snapshotId,
             project: this.project.id,
             type: type.id,
@@ -755,17 +763,17 @@ export class Checker {
         });
         return data.map(d => this.objectRegistry.getOrCreateSignature(d));
     }
-    async getResolvedSignature(node) {
-        const data = await this.client.apiRequest("getResolvedSignature", {
+    getResolvedSignature(node) {
+        const data = this.client.apiRequest("getResolvedSignature", {
             snapshot: this.snapshotId,
             project: this.project.id,
             location: getNodeId(node),
         });
         return data ? this.objectRegistry.getOrCreateSignature(data) : undefined;
     }
-    async getTypeAtPosition(file, positionOrPositions) {
+    getTypeAtPosition(file, positionOrPositions) {
         if (typeof positionOrPositions === "number") {
-            const data = await this.client.apiRequest("getTypeAtPosition", {
+            const data = this.client.apiRequest("getTypeAtPosition", {
                 snapshot: this.snapshotId,
                 project: this.project.id,
                 file,
@@ -773,7 +781,7 @@ export class Checker {
             });
             return data ? this.objectRegistry.getOrCreateType(data) : undefined;
         }
-        const data = await this.client.apiRequest("getTypesAtPositions", {
+        const data = this.client.apiRequest("getTypesAtPositions", {
             snapshot: this.snapshotId,
             project: this.project.id,
             file,
@@ -781,10 +789,10 @@ export class Checker {
         });
         return data.map(d => d ? this.objectRegistry.getOrCreateType(d) : undefined);
     }
-    async resolveName(name, meaning, location, excludeGlobals) {
+    resolveName(name, meaning, location, excludeGlobals) {
         // Distinguish Node (has `kind`) from DocumentPosition (has `document` and `position`)
         const isNode = location && "kind" in location;
-        const data = await this.client.apiRequest("resolveName", {
+        const data = this.client.apiRequest("resolveName", {
             snapshot: this.snapshotId,
             project: this.project.id,
             name,
@@ -796,54 +804,54 @@ export class Checker {
         });
         return data ? this.objectRegistry.getOrCreateSymbol(data) : undefined;
     }
-    async getResolvedSymbol(node) {
+    getResolvedSymbol(node) {
         const text = node.text;
         if (!text)
             return undefined;
         return this.resolveName(text, SymbolFlags.Value | SymbolFlags.ExportValue, node);
     }
-    async getContextualType(node) {
-        const data = await this.client.apiRequest("getContextualType", {
+    getContextualType(node) {
+        const data = this.client.apiRequest("getContextualType", {
             snapshot: this.snapshotId,
             project: this.project.id,
             location: getNodeId(node),
         });
         return data ? this.objectRegistry.getOrCreateType(data) : undefined;
     }
-    async getBaseTypeOfLiteralType(type) {
-        const data = await this.client.apiRequest("getBaseTypeOfLiteralType", {
+    getBaseTypeOfLiteralType(type) {
+        const data = this.client.apiRequest("getBaseTypeOfLiteralType", {
             snapshot: this.snapshotId,
             project: this.project.id,
             type: type.id,
         });
         return data ? this.objectRegistry.getOrCreateType(data) : undefined;
     }
-    async getNonNullableType(type) {
-        const data = await this.client.apiRequest("getNonNullableType", {
+    getNonNullableType(type) {
+        const data = this.client.apiRequest("getNonNullableType", {
             snapshot: this.snapshotId,
             project: this.project.id,
             type: type.id,
         });
         return data ? this.objectRegistry.getOrCreateType(data) : undefined;
     }
-    async getTypeFromTypeNode(node) {
-        const data = await this.client.apiRequest("getTypeFromTypeNode", {
+    getTypeFromTypeNode(node) {
+        const data = this.client.apiRequest("getTypeFromTypeNode", {
             snapshot: this.snapshotId,
             project: this.project.id,
             location: getNodeId(node),
         });
         return data ? this.objectRegistry.getOrCreateType(data) : undefined;
     }
-    async getWidenedType(type) {
-        const data = await this.client.apiRequest("getWidenedType", {
+    getWidenedType(type) {
+        const data = this.client.apiRequest("getWidenedType", {
             snapshot: this.snapshotId,
             project: this.project.id,
             type: type.id,
         });
         return data ? this.objectRegistry.getOrCreateType(data) : undefined;
     }
-    async getParameterType(signature, index) {
-        const data = await this.client.apiRequest("getParameterType", {
+    getParameterType(signature, index) {
+        const data = this.client.apiRequest("getParameterType", {
             snapshot: this.snapshotId,
             project: this.project.id,
             signature: signature.id,
@@ -851,14 +859,14 @@ export class Checker {
         });
         return data ? this.objectRegistry.getOrCreateType(data) : undefined;
     }
-    async isArrayLikeType(type) {
+    isArrayLikeType(type) {
         return this.client.apiRequest("isArrayLikeType", {
             snapshot: this.snapshotId,
             project: this.project.id,
             type: type.id,
         });
     }
-    async isTypeAssignableTo(source, target) {
+    isTypeAssignableTo(source, target) {
         return this.client.apiRequest("isTypeAssignableTo", {
             snapshot: this.snapshotId,
             project: this.project.id,
@@ -866,8 +874,8 @@ export class Checker {
             target: target.id,
         });
     }
-    async getShorthandAssignmentValueSymbol(node) {
-        const data = await this.client.apiRequest("getShorthandAssignmentValueSymbol", {
+    getShorthandAssignmentValueSymbol(node) {
+        const data = this.client.apiRequest("getShorthandAssignmentValueSymbol", {
             snapshot: this.snapshotId,
             project: this.project.id,
             location: getNodeId(node),
@@ -879,8 +887,8 @@ export class Checker {
      * a type; for symbols whose type cannot be determined the checker yields the
      * error type (use {@link Type.isErrorType} to detect it).
      */
-    async getTypeOfSymbolAtLocation(symbol, location) {
-        const data = await this.client.apiRequest("getTypeOfSymbolAtLocation", {
+    getTypeOfSymbolAtLocation(symbol, location) {
+        const data = this.client.apiRequest("getTypeOfSymbolAtLocation", {
             snapshot: this.snapshotId,
             project: this.project.id,
             symbol: symbol.id,
@@ -890,48 +898,48 @@ export class Checker {
             throw new Error(`getTypeOfSymbolAtLocation returned no type for symbol ${symbol.id}`);
         return this.objectRegistry.getOrCreateType(data);
     }
-    async getIntrinsicType(method) {
-        const data = await this.client.apiRequest(method, {
+    getIntrinsicType(method) {
+        const data = this.client.apiRequest(method, {
             snapshot: this.snapshotId,
             project: this.project.id,
         });
         return this.objectRegistry.getOrCreateType(data);
     }
-    async getAnyType() {
+    getAnyType() {
         return this.getIntrinsicType("getAnyType");
     }
-    async getStringType() {
+    getStringType() {
         return this.getIntrinsicType("getStringType");
     }
-    async getNumberType() {
+    getNumberType() {
         return this.getIntrinsicType("getNumberType");
     }
-    async getBooleanType() {
+    getBooleanType() {
         return this.getIntrinsicType("getBooleanType");
     }
-    async getVoidType() {
+    getVoidType() {
         return this.getIntrinsicType("getVoidType");
     }
-    async getUndefinedType() {
+    getUndefinedType() {
         return this.getIntrinsicType("getUndefinedType");
     }
-    async getNullType() {
+    getNullType() {
         return this.getIntrinsicType("getNullType");
     }
-    async getNeverType() {
+    getNeverType() {
         return this.getIntrinsicType("getNeverType");
     }
-    async getUnknownType() {
+    getUnknownType() {
         return this.getIntrinsicType("getUnknownType");
     }
-    async getBigIntType() {
+    getBigIntType() {
         return this.getIntrinsicType("getBigIntType");
     }
-    async getESSymbolType() {
+    getESSymbolType() {
         return this.getIntrinsicType("getESSymbolType");
     }
-    async typeToTypeNode(type, enclosingDeclaration, flags) {
-        const binaryData = await this.client.apiRequestBinary("typeToTypeNode", {
+    typeToTypeNode(type, enclosingDeclaration, flags) {
+        const binaryData = this.client.apiRequestBinary("typeToTypeNode", {
             snapshot: this.snapshotId,
             project: this.project.id,
             type: type.id,
@@ -942,8 +950,8 @@ export class Checker {
             return undefined;
         return decodeNode(binaryData);
     }
-    async signatureToSignatureDeclaration(signature, kind, enclosingDeclaration, flags) {
-        const binaryData = await this.client.apiRequestBinary("signatureToSignatureDeclaration", {
+    signatureToSignatureDeclaration(signature, kind, enclosingDeclaration, flags) {
+        const binaryData = this.client.apiRequestBinary("signatureToSignatureDeclaration", {
             snapshot: this.snapshotId,
             project: this.project.id,
             signature: signature.id,
@@ -955,7 +963,7 @@ export class Checker {
             return undefined;
         return decodeNode(binaryData);
     }
-    async typeToString(type, enclosingDeclaration, flags) {
+    typeToString(type, enclosingDeclaration, flags) {
         return this.client.apiRequest("typeToString", {
             snapshot: this.snapshotId,
             project: this.project.id,
@@ -964,45 +972,45 @@ export class Checker {
             flags,
         });
     }
-    async isContextSensitive(node) {
+    isContextSensitive(node) {
         return this.client.apiRequest("isContextSensitive", {
             snapshot: this.snapshotId,
             project: this.project.id,
             location: getNodeId(node),
         });
     }
-    async isArrayType(type) {
+    isArrayType(type) {
         return this.client.apiRequest("isArrayType", {
             snapshot: this.snapshotId,
             project: this.project.id,
             type: type.id,
         });
     }
-    async isTupleType(type) {
+    isTupleType(type) {
         return this.client.apiRequest("isTupleType", {
             snapshot: this.snapshotId,
             project: this.project.id,
             type: type.id,
         });
     }
-    async getReturnTypeOfSignature(signature) {
-        const data = await this.client.apiRequest("getReturnTypeOfSignature", {
+    getReturnTypeOfSignature(signature) {
+        const data = this.client.apiRequest("getReturnTypeOfSignature", {
             snapshot: this.snapshotId,
             project: this.project.id,
             signature: signature.id,
         });
         return data ? this.objectRegistry.getOrCreateType(data) : undefined;
     }
-    async getRestTypeOfSignature(signature) {
-        const data = await this.client.apiRequest("getRestTypeOfSignature", {
+    getRestTypeOfSignature(signature) {
+        const data = this.client.apiRequest("getRestTypeOfSignature", {
             snapshot: this.snapshotId,
             project: this.project.id,
             signature: signature.id,
         });
         return data ? this.objectRegistry.getOrCreateType(data) : undefined;
     }
-    async getTypePredicateOfSignature(signature) {
-        const data = await this.client.apiRequest("getTypePredicateOfSignature", {
+    getTypePredicateOfSignature(signature) {
+        const data = this.client.apiRequest("getTypePredicateOfSignature", {
             snapshot: this.snapshotId,
             project: this.project.id,
             signature: signature.id,
@@ -1020,32 +1028,32 @@ export class Checker {
      * Get the base types of a class or interface type. A type with no base types
      * yields an empty array.
      */
-    async getBaseTypes(type) {
-        const data = await this.client.apiRequest("getBaseTypes", {
+    getBaseTypes(type) {
+        const data = this.client.apiRequest("getBaseTypes", {
             snapshot: this.snapshotId,
             project: this.project.id,
             type: type.id,
         });
         return data ? data.map(d => this.objectRegistry.getOrCreateType(d)) : [];
     }
-    async getApparentType(type) {
-        const data = await this.client.apiRequest("getApparentType", {
+    getApparentType(type) {
+        const data = this.client.apiRequest("getApparentType", {
             snapshot: this.snapshotId,
             project: this.project.id,
             type: type.id,
         });
         return data ? this.objectRegistry.getOrCreateType(data) : undefined;
     }
-    async getPropertiesOfType(type) {
-        const data = await this.client.apiRequest("getPropertiesOfType", {
+    getPropertiesOfType(type) {
+        const data = this.client.apiRequest("getPropertiesOfType", {
             snapshot: this.snapshotId,
             project: this.project.id,
             type: type.id,
         });
         return data ? data.map(d => this.objectRegistry.getOrCreateSymbol(d)) : [];
     }
-    async getIndexInfosOfType(type) {
-        const data = await this.client.apiRequest("getIndexInfosOfType", {
+    getIndexInfosOfType(type) {
+        const data = this.client.apiRequest("getIndexInfosOfType", {
             snapshot: this.snapshotId,
             project: this.project.id,
             type: type.id,
@@ -1063,24 +1071,24 @@ export class Checker {
      * Get the constraint of a type parameter (the `T` in `<U extends T>`), or
      * undefined if it has none.
      */
-    async getConstraintOfTypeParameter(type) {
-        const data = await this.client.apiRequest("getConstraintOfTypeParameter", {
+    getConstraintOfTypeParameter(type) {
+        const data = this.client.apiRequest("getConstraintOfTypeParameter", {
             snapshot: this.snapshotId,
             project: this.project.id,
             type: type.id,
         });
         return data ? this.objectRegistry.getOrCreateType(data) : undefined;
     }
-    async getBaseConstraintOfType(type) {
-        const data = await this.client.apiRequest("getBaseConstraintOfType", {
+    getBaseConstraintOfType(type) {
+        const data = this.client.apiRequest("getBaseConstraintOfType", {
             snapshot: this.snapshotId,
             project: this.project.id,
             type: type.id,
         });
         return data ? this.objectRegistry.getOrCreateType(data) : undefined;
     }
-    async getPropertyOfType(type, name) {
-        const data = await this.client.apiRequest("getPropertyOfType", {
+    getPropertyOfType(type, name) {
+        const data = this.client.apiRequest("getPropertyOfType", {
             snapshot: this.snapshotId,
             project: this.project.id,
             type: type.id,
@@ -1088,24 +1096,24 @@ export class Checker {
         });
         return data ? this.objectRegistry.getOrCreateSymbol(data) : undefined;
     }
-    async getConstantValue(node) {
-        const data = await this.client.apiRequest("getConstantValue", {
+    getConstantValue(node) {
+        const data = this.client.apiRequest("getConstantValue", {
             snapshot: this.snapshotId,
             project: this.project.id,
             location: getNodeId(node),
         });
         return data ?? undefined;
     }
-    async getSignatureFromDeclaration(node) {
-        const data = await this.client.apiRequest("getSignatureFromDeclaration", {
+    getSignatureFromDeclaration(node) {
+        const data = this.client.apiRequest("getSignatureFromDeclaration", {
             snapshot: this.snapshotId,
             project: this.project.id,
             location: getNodeId(node),
         });
         return data ? this.objectRegistry.getOrCreateSignature(data) : undefined;
     }
-    async getExportSpecifierLocalTargetSymbol(node) {
-        const data = await this.client.apiRequest("getExportSpecifierLocalTargetSymbol", {
+    getExportSpecifierLocalTargetSymbol(node) {
+        const data = this.client.apiRequest("getExportSpecifierLocalTargetSymbol", {
             snapshot: this.snapshotId,
             project: this.project.id,
             location: getNodeId(node),
@@ -1117,8 +1125,8 @@ export class Checker {
      * an unresolved alias the checker yields the unknown symbol (use
      * {@link Checker.isUnknownSymbol} to detect it).
      */
-    async getAliasedSymbol(symbol) {
-        const data = await this.client.apiRequest("getAliasedSymbol", {
+    getAliasedSymbol(symbol) {
+        const data = this.client.apiRequest("getAliasedSymbol", {
             snapshot: this.snapshotId,
             project: this.project.id,
             symbol: symbol.id,
@@ -1127,8 +1135,8 @@ export class Checker {
             throw new Error(`getAliasedSymbol returned no symbol for symbol ${symbol.id}`);
         return this.objectRegistry.getOrCreateSymbol(data);
     }
-    async getImmediateAliasedSymbol(symbol) {
-        const data = await this.client.apiRequest("getImmediateAliasedSymbol", {
+    getImmediateAliasedSymbol(symbol) {
+        const data = this.client.apiRequest("getImmediateAliasedSymbol", {
             snapshot: this.snapshotId,
             project: this.project.id,
             symbol: symbol.id,
@@ -1151,31 +1159,31 @@ export class Checker {
      * Returns `true` if the symbol is the checker's "unknown" symbol (e.g. the
      * result of {@link Checker.getAliasedSymbol} on an unresolved alias).
      */
-    async isUnknownSymbol(symbol) {
-        return symbol.id === (await this.getWellKnownSymbols()).unknown;
+    isUnknownSymbol(symbol) {
+        return symbol.id === (this.getWellKnownSymbols()).unknown;
     }
     /**
      * Returns `true` if the symbol is the checker's "undefined" symbol.
      */
-    async isUndefinedSymbol(symbol) {
-        return symbol.id === (await this.getWellKnownSymbols()).undefined;
+    isUndefinedSymbol(symbol) {
+        return symbol.id === (this.getWellKnownSymbols()).undefined;
     }
     /**
      * Returns `true` if the symbol is the checker's "arguments" symbol.
      */
-    async isArgumentsSymbol(symbol) {
-        return symbol.id === (await this.getWellKnownSymbols()).arguments;
+    isArgumentsSymbol(symbol) {
+        return symbol.id === (this.getWellKnownSymbols()).arguments;
     }
-    async getExportsOfModule(symbol) {
-        const data = await this.client.apiRequest("getExportsOfModule", {
+    getExportsOfModule(symbol) {
+        const data = this.client.apiRequest("getExportsOfModule", {
             snapshot: this.snapshotId,
             project: this.project.id,
             symbol: symbol.id,
         });
         return data ? data.map(d => this.objectRegistry.getOrCreateSymbol(d)) : [];
     }
-    async getMemberInModuleExports(symbol, name) {
-        const data = await this.client.apiRequest("getMemberInModuleExports", {
+    getMemberInModuleExports(symbol, name) {
+        const data = this.client.apiRequest("getMemberInModuleExports", {
             snapshot: this.snapshotId,
             project: this.project.id,
             symbol: symbol.id,
@@ -1183,15 +1191,15 @@ export class Checker {
         });
         return data ? this.objectRegistry.getOrCreateSymbol(data) : undefined;
     }
-    async getJsDocTagsOfSymbol(symbol) {
-        const data = await this.client.apiRequest("getJsDocTags", {
+    getJsDocTagsOfSymbol(symbol) {
+        const data = this.client.apiRequest("getJsDocTags", {
             snapshot: this.snapshotId,
             project: this.project.id,
             symbol: symbol.id,
         });
         return data ?? [];
     }
-    async getDocumentationCommentOfSymbol(symbol) {
+    getDocumentationCommentOfSymbol(symbol) {
         return this.client.apiRequest("getDocumentationComment", {
             snapshot: this.snapshotId,
             project: this.project.id,
@@ -1201,8 +1209,8 @@ export class Checker {
     /**
      * Get the type arguments of a type reference (e.g. the `string` in `Array<string>`).
      */
-    async getTypeArguments(type) {
-        const data = await this.client.apiRequest("getTypeArguments", {
+    getTypeArguments(type) {
+        const data = this.client.apiRequest("getTypeArguments", {
             snapshot: this.snapshotId,
             project: this.project.id,
             type: type.id,
@@ -1215,7 +1223,7 @@ export class Emitter {
     constructor(client) {
         this.client = client;
     }
-    async printNode(node, options = {}) {
+    printNode(node, options = {}) {
         const encoded = encodeNode(node);
         const base64 = uint8ArrayToBase64(encoded);
         return this.client.apiRequest("printNode", {
@@ -1246,8 +1254,8 @@ export class NodeHandle {
      * and looking up the node by index. If no project is passed, the project that produced
      * the handle is used.
      */
-    async resolve(project = this.canonicalProject) {
-        const sourceFile = await project.program.getSourceFile(this.path);
+    resolve(project = this.canonicalProject) {
+        const sourceFile = project.program.getSourceFile(this.path);
         if (!sourceFile) {
             return undefined;
         }
@@ -1294,7 +1302,7 @@ export class Symbol {
         if (data.exportSymbol !== undefined)
             this.exportSymbol = data.exportSymbol;
     }
-    async getParent() {
+    getParent() {
         return this.objectRegistry.fetchSymbol(this, "getParentOfSymbol", this.parent, this.canonicalProject.id);
     }
     /**
@@ -1311,23 +1319,23 @@ export class Symbol {
     getExports() {
         return this.exportsCache ??= this.fetchSymbolTable("getExportsOfSymbol");
     }
-    async fetchSymbolTable(method) {
-        const symbols = await this.objectRegistry.fetchSymbols(this, method, undefined, this.canonicalProject.id);
+    fetchSymbolTable(method) {
+        const symbols = this.objectRegistry.fetchSymbols(this, method, undefined, this.canonicalProject.id);
         const table = new Map();
         for (const symbol of symbols) {
             table.set(symbol.escapedName, symbol);
         }
         return table;
     }
-    async getExportSymbol() {
+    getExportSymbol() {
         if (!this.exportSymbol)
             return this;
         return this.objectRegistry.fetchSymbol(this, "getExportSymbolOfSymbol", this.exportSymbol, this.canonicalProject.id);
     }
-    async getJsDocTags(checker) {
+    getJsDocTags(checker) {
         return checker.getJsDocTagsOfSymbol(this);
     }
-    async getDocumentationComment(checker) {
+    getDocumentationComment(checker) {
         return checker.getDocumentationCommentOfSymbol(this);
     }
 }
@@ -1412,22 +1420,22 @@ class TypeObject {
         this.trueType = false;
         this.falseType = false;
     }
-    async getSymbol() {
+    getSymbol() {
         return this.objectRegistry.fetchSymbol(this, "getSymbolOfType", this.symbol);
     }
-    async getAliasSymbol() {
+    getAliasSymbol() {
         return this.objectRegistry.fetchSymbol(this, "getAliasSymbolOfType", this.aliasSymbol);
     }
-    async getTarget() {
+    getTarget() {
         return this.objectRegistry.fetchType(this, "getTargetOfType", this.target);
     }
-    async getFreshType() {
+    getFreshType() {
         return this.objectRegistry.fetchType(this, "getFreshTypeOfType", this.freshType);
     }
-    async getRegularType() {
+    getRegularType() {
         return this.objectRegistry.fetchType(this, "getRegularTypeOfType", this.regularType);
     }
-    async getTypes() {
+    getTypes() {
         // Only union, intersection, and template literal types have constituent
         // types; any other kind has none, so return undefined rather than sending
         // a request the server cannot satisfy.
@@ -1436,43 +1444,43 @@ class TypeObject {
         }
         return this.objectRegistry.fetchTypes(this, "getTypesOfType");
     }
-    async getTypeParameters() {
+    getTypeParameters() {
         return this.objectRegistry.fetchTypes(this, "getTypeParametersOfType", this.typeParameters);
     }
-    async getOuterTypeParameters() {
+    getOuterTypeParameters() {
         return this.objectRegistry.fetchTypes(this, "getOuterTypeParametersOfType", this.outerTypeParameters);
     }
-    async getLocalTypeParameters() {
+    getLocalTypeParameters() {
         return this.objectRegistry.fetchTypes(this, "getLocalTypeParametersOfType", this.localTypeParameters);
     }
-    async getAliasTypeArguments() {
+    getAliasTypeArguments() {
         return this.objectRegistry.fetchTypes(this, "getAliasTypeArgumentsOfType", this.aliasTypeArguments);
     }
-    async getObjectType() {
+    getObjectType() {
         return this.objectRegistry.fetchType(this, "getObjectTypeOfType", this.objectType);
     }
-    async getIndexType() {
+    getIndexType() {
         return this.objectRegistry.fetchType(this, "getIndexTypeOfType", this.indexType);
     }
-    async getCheckType() {
+    getCheckType() {
         return this.objectRegistry.fetchType(this, "getCheckTypeOfType", this.checkType);
     }
-    async getExtendsType() {
+    getExtendsType() {
         return this.objectRegistry.fetchType(this, "getExtendsTypeOfType", this.extendsType);
     }
-    async getBaseType() {
+    getBaseType() {
         return this.objectRegistry.fetchType(this, "getBaseTypeOfType", this.baseType);
     }
-    async getConstraint() {
+    getConstraint() {
         return this.objectRegistry.fetchType(this, "getConstraintOfType", this.substConstraint);
     }
-    async getTrueType() {
-        const result = await this.objectRegistry.fetchType(this, "getTrueTypeOfConditionalType", this.trueType);
+    getTrueType() {
+        const result = this.objectRegistry.fetchType(this, "getTrueTypeOfConditionalType", this.trueType);
         this.trueType = result.id;
         return result;
     }
-    async getFalseType() {
-        const result = await this.objectRegistry.fetchType(this, "getFalseTypeOfConditionalType", this.falseType);
+    getFalseType() {
+        const result = this.objectRegistry.fetchType(this, "getFalseTypeOfConditionalType", this.falseType);
         this.falseType = result.id;
         return result;
     }
@@ -1480,7 +1488,7 @@ class TypeObject {
      * Get the base types of this type. Returns `undefined` for any type that is
      * not a class or interface.
      */
-    async getBaseTypes() {
+    getBaseTypes() {
         if (!this.isClassOrInterface()) {
             return undefined;
         }
@@ -1632,16 +1640,16 @@ export class Signature {
         this.thisParameter = data.thisParameter;
         this.target = data.target;
     }
-    async getTypeParameters() {
+    getTypeParameters() {
         return this.objectRegistry.fetchTypes(this, "getTypeParametersOfSignature", this.typeParameters);
     }
-    async getParameters() {
+    getParameters() {
         return this.objectRegistry.fetchSymbols(this, "getParametersOfSignature", this.parameters);
     }
-    async getThisParameter() {
+    getThisParameter() {
         return this.objectRegistry.fetchSymbol(this, "getThisParameterOfSignature", this.thisParameter);
     }
-    async getTarget() {
+    getTarget() {
         return this.objectRegistry.fetchSignature(this, "getTargetOfSignature", this.target);
     }
     get hasRestParameter() {

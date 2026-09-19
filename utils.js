@@ -1,72 +1,67 @@
-/*global navigator*/
-'use strict';
-
-const {
-  REGEX_BACKSLASH,
-  REGEX_REMOVE_BACKSLASH,
-  REGEX_SPECIAL_CHARS,
-  REGEX_SPECIAL_CHARS_GLOBAL
-} = require('./constants');
-
-exports.isObject = val => val !== null && typeof val === 'object' && !Array.isArray(val);
-exports.hasRegexChars = str => REGEX_SPECIAL_CHARS.test(str);
-exports.isRegexChar = str => str.length === 1 && exports.hasRegexChars(str);
-exports.escapeRegex = str => str.replace(REGEX_SPECIAL_CHARS_GLOBAL, '\\$1');
-exports.toPosixSlashes = str => str.replace(REGEX_BACKSLASH, '/');
-
-exports.isWindows = () => {
-  if (typeof navigator !== 'undefined' && navigator.platform) {
-    const platform = navigator.platform.toLowerCase();
-    return platform === 'win32' || platform === 'windows';
-  }
-
-  if (typeof process !== 'undefined' && process.platform) {
-    return process.platform === 'win32';
-  }
-
-  return false;
-};
-
-exports.removeBackslashes = str => {
-  return str.replace(REGEX_REMOVE_BACKSLASH, match => {
-    return match === '\\' ? '' : match;
-  });
-};
-
-exports.escapeLast = (input, char, lastIdx) => {
-  const idx = input.lastIndexOf(char, lastIdx);
-  if (idx === -1) return input;
-  if (input[idx - 1] === '\\') return exports.escapeLast(input, char, idx - 1);
-  return `${input.slice(0, idx)}\\${input.slice(idx)}`;
-};
-
-exports.removePrefix = (input, state = {}) => {
-  let output = input;
-  if (output.startsWith('./')) {
-    output = output.slice(2);
-    state.prefix = './';
-  }
-  return output;
-};
-
-exports.wrapOutput = (input, state = {}, options = {}) => {
-  const prepend = options.contains ? '' : '^';
-  const append = options.contains ? '' : '$';
-
-  let output = `${prepend}(?:${input})${append}`;
-  if (state.negated === true) {
-    output = `(?:^(?!${output}).*$)`;
-  }
-  return output;
-};
-
-exports.basename = (path, { windows } = {}) => {
-  const segs = path.split(windows ? /[\\/]/ : '/');
-  const last = segs[segs.length - 1];
-
-  if (last === '') {
-    return segs[segs.length - 2];
-  }
-
-  return last;
-};
+import { CharacterCodes } from "#enums/characterCodes";
+import { SyntaxKind } from "#enums/syntaxKind";
+let syntaxKindNames;
+function getSyntaxKindNames() {
+    if (!syntaxKindNames) {
+        syntaxKindNames = new Map();
+        for (const name of Object.keys(SyntaxKind)) {
+            const val = SyntaxKind[name];
+            if (typeof val === "number" && !syntaxKindNames.has(val)) {
+                syntaxKindNames.set(val, name);
+            }
+        }
+        syntaxKindNames.set(SyntaxKind.EndOfFile, "EndOfFileToken");
+    }
+    return syntaxKindNames;
+}
+export function formatSyntaxKind(kind) {
+    return getSyntaxKindNames().get(kind) ?? `Unknown(${kind})`;
+}
+/**
+ * Remove one extra leading underscore from an identifier name, recovering the
+ * display form from its escaped {@link __String} key.
+ */
+export function unescapeLeadingUnderscores(identifier) {
+    const id = identifier;
+    return id.length >= 3 && id.charCodeAt(0) === CharacterCodes._ && id.charCodeAt(1) === CharacterCodes._ && id.charCodeAt(2) === CharacterCodes._
+        ? id.slice(1)
+        : id;
+}
+/**
+ * Add an extra leading underscore to a display name that already begins with
+ * `__`, producing its escaped {@link __String} key.
+ */
+export function escapeLeadingUnderscores(identifier) {
+    return (identifier.length >= 2 && identifier.charCodeAt(0) === CharacterCodes._ && identifier.charCodeAt(1) === CharacterCodes._
+        ? "_" + identifier
+        : identifier);
+}
+export function tryCast(value, test) {
+    return value !== undefined && test(value) ? value : undefined;
+}
+export function cast(value, test) {
+    if (value !== undefined && test(value))
+        return value;
+    throw new Error(`Invalid cast. The supplied value ${value} did not pass the test '${test.name}'.`);
+}
+export function cloneSourceFileData(sourceFile) {
+    return {
+        statements: sourceFile.statements,
+        endOfFileToken: sourceFile.endOfFileToken,
+        text: sourceFile.text,
+        fileName: sourceFile.fileName,
+        path: sourceFile.path,
+        languageVariant: sourceFile.languageVariant,
+        scriptKind: sourceFile.scriptKind,
+        isDeclarationFile: sourceFile.isDeclarationFile,
+        referencedFiles: sourceFile.referencedFiles,
+        typeReferenceDirectives: sourceFile.typeReferenceDirectives,
+        libReferenceDirectives: sourceFile.libReferenceDirectives,
+        imports: sourceFile.imports,
+        moduleAugmentations: sourceFile.moduleAugmentations,
+        ambientModuleNames: sourceFile.ambientModuleNames,
+        externalModuleIndicator: sourceFile.externalModuleIndicator,
+        tokenCache: undefined,
+    };
+}
+//# sourceMappingURL=utils.js.map
