@@ -53,7 +53,7 @@ export class OpenRouterProvider {
         const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
           method: 'POST',
           signal: request.signal,
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${request.apiKey}`, 'HTTP-Referer': location.origin, 'X-Title': 'SELTERN' },
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${request.apiKey}`, 'HTTP-Referer': location.origin, 'X-Title': 'SELTREN' },
           body: JSON.stringify({ model: request.model, stream: true, temperature: request.temperature ?? .2, max_tokens: request.maxTokens ?? 1400, messages: [{ role: 'system', content: request.system }, { role: 'user', content: `${request.prompt}\n\nAUTHORIZED WORKSPACE CONTEXT:\n${request.context}` }] })
         })
         if (!response.ok) {
