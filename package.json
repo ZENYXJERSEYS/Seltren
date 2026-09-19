@@ -1,83 +1,51 @@
 {
-  "name": "picomatch",
-  "description": "Blazing fast and accurate glob matcher written in JavaScript, with no dependencies and full support for standard and extended Bash glob features, including braces, extglobs, POSIX brackets, and regular expressions.",
-  "version": "4.0.7",
-  "homepage": "https://github.com/micromatch/picomatch",
-  "author": "Jon Schlinkert (https://github.com/jonschlinkert)",
-  "funding": "https://github.com/sponsors/jonschlinkert",
-  "repository": "micromatch/picomatch",
-  "bugs": {
-    "url": "https://github.com/micromatch/picomatch/issues"
-  },
+  "name": "react",
+  "description": "React is a JavaScript library for building user interfaces.",
+  "keywords": [
+    "react"
+  ],
+  "version": "19.3.0",
+  "homepage": "https://react.dev/",
+  "bugs": "https://github.com/react/react/issues",
   "license": "MIT",
   "files": [
+    "LICENSE",
+    "README.md",
     "index.js",
-    "posix.js",
-    "lib"
+    "cjs/",
+    "compiler-runtime.js",
+    "jsx-runtime.js",
+    "jsx-runtime.react-server.js",
+    "jsx-dev-runtime.js",
+    "jsx-dev-runtime.react-server.js",
+    "react.react-server.js"
   ],
-  "sideEffects": false,
   "main": "index.js",
+  "exports": {
+    ".": {
+      "react-server": "./react.react-server.js",
+      "default": "./index.js"
+    },
+    "./package.json": "./package.json",
+    "./jsx-runtime": {
+      "react-server": "./jsx-runtime.react-server.js",
+      "default": "./jsx-runtime.js"
+    },
+    "./jsx-dev-runtime": {
+      "react-server": "./jsx-dev-runtime.react-server.js",
+      "default": "./jsx-dev-runtime.js"
+    },
+    "./compiler-runtime": {
+      "react-server": "./compiler-runtime.js",
+      "default": "./compiler-runtime.js"
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/react/react.git",
+    "directory": "packages/react"
+  },
   "engines": {
-    "node": ">=12"
-  },
-  "scripts": {
-    "lint": "eslint --cache --cache-location node_modules/.cache/.eslintcache --report-unused-disable-directives --ignore-path .gitignore .",
-    "mocha": "mocha --reporter dot",
-    "test": "npm run lint && npm run mocha",
-    "test:ci": "npm run test:cover",
-    "test:cover": "nyc npm run mocha"
-  },
-  "devDependencies": {
-    "eslint": "^8.57.0",
-    "fill-range": "^7.0.1",
-    "gulp-format-md": "^2.0.0",
-    "mocha": "^10.4.0",
-    "nyc": "^15.1.0"
-  },
-  "keywords": [
-    "glob",
-    "match",
-    "picomatch"
-  ],
-  "nyc": {
-    "reporter": [
-      "html",
-      "lcov",
-      "text-summary",
-      "cobertura"
-    ]
-  },
-  "verb": {
-    "toc": {
-      "render": true,
-      "method": "preWrite",
-      "maxdepth": 3
-    },
-    "layout": "empty",
-    "tasks": [
-      "readme"
-    ],
-    "plugins": [
-      "gulp-format-md"
-    ],
-    "lint": {
-      "reflinks": true
-    },
-    "related": {
-      "list": [
-        "braces",
-        "micromatch"
-      ]
-    },
-    "reflinks": [
-      "braces",
-      "expand-brackets",
-      "extglob",
-      "fill-range",
-      "micromatch",
-      "minimatch",
-      "nanomatch",
-      "picomatch"
-    ]
+    "node": ">=0.10.0"
   }
 }
