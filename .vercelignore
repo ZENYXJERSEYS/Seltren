@@ -1,0 +1,10 @@
+node_modules
+dist
+.freebuff
+.vercel
+.env
+.env.local
+*.log
+*.log.err
+.DS_Store
+Thumbs.db

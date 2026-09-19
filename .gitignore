@@ -1,0 +1,22 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Local tooling / secrets
+.env
+.env.local
+.env.*.local
+.freebuff/
+.vercel/
+.vercel
+
+# Logs
+*.log
+*.log.err
+npm-debug.log*
+
+# OS junk
+.DS_Store
+Thumbs.db
