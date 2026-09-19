@@ -1,128 +1,83 @@
 {
-    "name": "@types/react-dom",
-    "version": "19.3.0",
-    "description": "TypeScript definitions for react-dom",
-    "homepage": "https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/react-dom",
-    "license": "MIT",
-    "contributors": [
-        {
-            "name": "Asana",
-            "url": "https://asana.com"
-        },
-        {
-            "name": "AssureSign",
-            "url": "http://www.assuresign.com"
-        },
-        {
-            "name": "Microsoft",
-            "url": "https://microsoft.com"
-        },
-        {
-            "name": "MartynasZilinskas",
-            "githubUsername": "MartynasZilinskas",
-            "url": "https://github.com/MartynasZilinskas"
-        },
-        {
-            "name": "Josh Rutherford",
-            "githubUsername": "theruther4d",
-            "url": "https://github.com/theruther4d"
-        },
-        {
-            "name": "Jessica Franco",
-            "githubUsername": "Jessidhia",
-            "url": "https://github.com/Jessidhia"
-        },
-        {
-            "name": "Sebastian Silbermann",
-            "githubUsername": "eps1lon",
-            "url": "https://github.com/eps1lon"
-        }
+  "name": "picomatch",
+  "description": "Blazing fast and accurate glob matcher written in JavaScript, with no dependencies and full support for standard and extended Bash glob features, including braces, extglobs, POSIX brackets, and regular expressions.",
+  "version": "4.0.7",
+  "homepage": "https://github.com/micromatch/picomatch",
+  "author": "Jon Schlinkert (https://github.com/jonschlinkert)",
+  "funding": "https://github.com/sponsors/jonschlinkert",
+  "repository": "micromatch/picomatch",
+  "bugs": {
+    "url": "https://github.com/micromatch/picomatch/issues"
+  },
+  "license": "MIT",
+  "files": [
+    "index.js",
+    "posix.js",
+    "lib"
+  ],
+  "sideEffects": false,
+  "main": "index.js",
+  "engines": {
+    "node": ">=12"
+  },
+  "scripts": {
+    "lint": "eslint --cache --cache-location node_modules/.cache/.eslintcache --report-unused-disable-directives --ignore-path .gitignore .",
+    "mocha": "mocha --reporter dot",
+    "test": "npm run lint && npm run mocha",
+    "test:ci": "npm run test:cover",
+    "test:cover": "nyc npm run mocha"
+  },
+  "devDependencies": {
+    "eslint": "^8.57.0",
+    "fill-range": "^7.0.1",
+    "gulp-format-md": "^2.0.0",
+    "mocha": "^10.4.0",
+    "nyc": "^15.1.0"
+  },
+  "keywords": [
+    "glob",
+    "match",
+    "picomatch"
+  ],
+  "nyc": {
+    "reporter": [
+      "html",
+      "lcov",
+      "text-summary",
+      "cobertura"
+    ]
+  },
+  "verb": {
+    "toc": {
+      "render": true,
+      "method": "preWrite",
+      "maxdepth": 3
+    },
+    "layout": "empty",
+    "tasks": [
+      "readme"
     ],
-    "main": "",
-    "types": "index.d.ts",
-    "exports": {
-        ".": {
-            "types": {
-                "default": "./index.d.ts"
-            }
-        },
-        "./client": {
-            "types": {
-                "default": "./client.d.ts"
-            }
-        },
-        "./canary": {
-            "types": {
-                "default": "./canary.d.ts"
-            }
-        },
-        "./server": {
-            "types": {
-                "default": "./server.d.ts"
-            }
-        },
-        "./server.browser": {
-            "types": {
-                "default": "./server.browser.d.ts"
-            }
-        },
-        "./server.bun": {
-            "types": {
-                "default": "./server.bun.d.ts"
-            }
-        },
-        "./server.edge": {
-            "types": {
-                "default": "./server.edge.d.ts"
-            }
-        },
-        "./server.node": {
-            "types": {
-                "default": "./server.node.d.ts"
-            }
-        },
-        "./static": {
-            "types": {
-                "default": "./static.d.ts"
-            }
-        },
-        "./static.browser": {
-            "types": {
-                "default": "./static.browser.d.ts"
-            }
-        },
-        "./static.edge": {
-            "types": {
-                "default": "./static.edge.d.ts"
-            }
-        },
-        "./static.node": {
-            "types": {
-                "default": "./static.node.d.ts"
-            }
-        },
-        "./experimental": {
-            "types": {
-                "default": "./experimental.d.ts"
-            }
-        },
-        "./test-utils": {
-            "types": {
-                "default": "./test-utils/index.d.ts"
-            }
-        },
-        "./package.json": "./package.json"
+    "plugins": [
+      "gulp-format-md"
+    ],
+    "lint": {
+      "reflinks": true
     },
-    "repository": {
-        "type": "git",
-        "url": "https://github.com/DefinitelyTyped/DefinitelyTyped.git",
-        "directory": "types/react-dom"
+    "related": {
+      "list": [
+        "braces",
+        "micromatch"
+      ]
     },
-    "scripts": {},
-    "dependencies": {},
-    "peerDependencies": {
-        "@types/react": "^19.3.0"
-    },
-    "typesPublisherContentHash": "345e361651b67ba93e5757949902dbca94f299c8328b8d01937dc05b5e487d8f",
-    "typeScriptVersion": "5.6"
+    "reflinks": [
+      "braces",
+      "expand-brackets",
+      "extglob",
+      "fill-range",
+      "micromatch",
+      "minimatch",
+      "nanomatch",
+      "picomatch"
+    ]
+  }
 }
