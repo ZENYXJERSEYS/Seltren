@@ -1,0 +1,27 @@
+/* Landing clarity upgrades */
+.intro-copy .value-prop{color:#e3e8df;line-height:1.6;font-size:15px;max-width:390px;margin:0 0 10px;text-wrap:balance}
+.intro-copy .phase-copy{color:#a9b3aa;line-height:1.55;font-size:13px;max-width:360px;min-height:60px;margin:0;animation:phase-swap .55s var(--ease) both}
+.intro-copy .phase-copy b{display:block;color:#d7c6a6;font:500 17px 'Space Grotesk';margin-bottom:4px;letter-spacing:-.02em}
+@keyframes phase-swap{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.how-link{color:#aab1a9!important;text-decoration:none;cursor:pointer}
+.how-link:hover{color:#fff!important}
+.landing-info{position:relative;z-index:6;background:linear-gradient(180deg,#0b1010,#0d1413 40%,#0b0f0e);border-top:1px solid var(--line);padding:96px 7% 110px}
+.landing-info-inner{max-width:1120px;margin:auto}
+.landing-info h2{font:500 clamp(38px,5vw,64px)/1 'Space Grotesk';letter-spacing:-.05em;margin:16px 0 18px;max-width:760px;text-wrap:balance}
+.landing-lede{color:#aeb9af;max-width:640px;line-height:1.65;font-size:16px;margin:0 0 46px}
+.landing-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:56px}
+.landing-grid article{border-top:1px solid var(--line);padding:20px 6px;transition:transform var(--fast) var(--ease)}
+.landing-grid article:hover{transform:translateY(-4px)}
+.landing-grid b{color:var(--gold);font-size:15px}
+.landing-grid h3{font:500 20px 'Space Grotesk';margin:14px 0 8px}
+.landing-grid p{font-size:13px;color:#9ba69e;line-height:1.6}
+.landing-trust{border:1px solid var(--line);background:#10171666;padding:26px 28px;max-width:760px;border-radius:8px}
+.landing-trust ul{list-style:none;margin:14px 0 0;padding:0}
+.landing-trust li{color:#9ba69e;font-size:13px;line-height:1.65;padding:9px 0;border-bottom:1px solid #ebe7de10}
+.landing-trust li:last-child{border-bottom:0}
+.landing-trust b{color:var(--bone)}
+.auth-field{display:grid;gap:7px;color:#b6c0b6;font-size:11px;margin-bottom:12px;text-align:left}
+.auth-field input{margin-bottom:0}
+@media(max-width:900px){.landing-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:620px){.intro-copy .value-prop{font-size:13px;max-width:none}.intro-copy .phase-copy{min-height:70px}.landing-grid{grid-template-columns:1fr}.landing-info{padding:70px 22px 80px}.landing-trust{padding:20px}}
+@media(prefers-reduced-motion:reduce){.intro-copy .phase-copy{animation:none}}
