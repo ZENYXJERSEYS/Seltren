@@ -1,117 +1,70 @@
 {
-  "name": "react-dom",
-  "version": "19.3.0",
-  "description": "React package for working with the DOM.",
-  "main": "index.js",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/react/react.git",
-    "directory": "packages/react-dom"
-  },
-  "keywords": [
-    "react"
-  ],
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/react/react/issues"
-  },
-  "homepage": "https://react.dev/",
-  "dependencies": {
-    "scheduler": "^0.28.0"
-  },
-  "peerDependencies": {
-    "react": "^19.3.0"
-  },
-  "files": [
-    "LICENSE",
-    "README.md",
-    "client.js",
-    "client.react-server.js",
-    "index.js",
-    "profiling.js",
-    "profiling.react-server.js",
-    "react-dom.react-server.js",
-    "server.browser.js",
-    "server.bun.js",
-    "server.edge.js",
-    "server.js",
-    "server.node.js",
-    "server.react-server.js",
-    "static.browser.js",
-    "static.edge.js",
-    "static.js",
-    "static.node.js",
-    "static.react-server.js",
-    "test-utils.js",
-    "cjs/"
-  ],
+  "name": "tinyglobby",
+  "version": "0.2.17",
+  "description": "A fast and minimal alternative to globby and fast-glob",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.cts",
   "exports": {
     ".": {
-      "react-server": "./react-dom.react-server.js",
-      "default": "./index.js"
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
     },
-    "./client": {
-      "react-server": "./client.react-server.js",
-      "default": "./client.js"
-    },
-    "./server": {
-      "react-server": "./server.react-server.js",
-      "workerd": "./server.edge.js",
-      "bun": "./server.bun.js",
-      "deno": "./server.node.js",
-      "worker": "./server.browser.js",
-      "node": "./server.node.js",
-      "edge-light": "./server.edge.js",
-      "browser": "./server.browser.js",
-      "default": "./server.node.js"
-    },
-    "./server.browser": {
-      "react-server": "./server.react-server.js",
-      "default": "./server.browser.js"
-    },
-    "./server.bun": {
-      "react-server": "./server.react-server.js",
-      "default": "./server.bun.js"
-    },
-    "./server.edge": {
-      "react-server": "./server.react-server.js",
-      "default": "./server.edge.js"
-    },
-    "./server.node": {
-      "react-server": "./server.react-server.js",
-      "default": "./server.node.js"
-    },
-    "./static": {
-      "react-server": "./static.react-server.js",
-      "workerd": "./static.edge.js",
-      "deno": "./static.browser.js",
-      "worker": "./static.browser.js",
-      "node": "./static.node.js",
-      "edge-light": "./static.edge.js",
-      "browser": "./static.browser.js",
-      "default": "./static.node.js"
-    },
-    "./static.browser": {
-      "react-server": "./static.react-server.js",
-      "default": "./static.browser.js"
-    },
-    "./static.edge": {
-      "react-server": "./static.react-server.js",
-      "default": "./static.edge.js"
-    },
-    "./static.node": {
-      "react-server": "./static.react-server.js",
-      "default": "./static.node.js"
-    },
-    "./profiling": {
-      "react-server": "./profiling.react-server.js",
-      "default": "./profiling.js"
-    },
-    "./test-utils": "./test-utils.js",
     "./package.json": "./package.json"
   },
-  "browser": {
-    "./server.js": "./server.browser.js",
-    "./static.js": "./static.browser.js"
+  "sideEffects": false,
+  "files": [
+    "dist"
+  ],
+  "author": "Superchupu",
+  "license": "MIT",
+  "keywords": [
+    "glob",
+    "patterns",
+    "tiny",
+    "fast"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SuperchupuDev/tinyglobby.git"
+  },
+  "bugs": {
+    "url": "https://github.com/SuperchupuDev/tinyglobby/issues"
+  },
+  "homepage": "https://superchupu.dev/tinyglobby",
+  "funding": {
+    "url": "https://github.com/sponsors/SuperchupuDev"
+  },
+  "dependencies": {
+    "fdir": "^6.5.0",
+    "picomatch": "^4.0.4"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.4.16",
+    "@types/node": "^25.9.1",
+    "@types/picomatch": "^4.0.3",
+    "fast-glob": "^3.3.3",
+    "fs-fixture": "^2.14.0",
+    "glob": "^13.0.6",
+    "tinybench": "^6.0.2",
+    "tsdown": "^0.22.1",
+    "typescript": "^6.0.3"
+  },
+  "engines": {
+    "node": ">=12.0.0"
+  },
+  "scripts": {
+    "bench": "node benchmark/bench.ts",
+    "bench:setup": "node benchmark/setup.ts",
+    "build": "tsdown",
+    "check": "biome check",
+    "check:fix": "biome check --write --unsafe",
+    "format": "biome format --write",
+    "lint": "biome lint",
+    "test": "node --test \"test/**/*.ts\"",
+    "test:coverage": "node --test --experimental-test-coverage \"test/**/*.ts\"",
+    "test:only": "node --test --test-only \"test/**/*.ts\"",
+    "typecheck": "tsc --noEmit"
   }
 }

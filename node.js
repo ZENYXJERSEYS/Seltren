@@ -1,494 +1,298 @@
-'use strict'
-
-let CssSyntaxError = require('./css-syntax-error')
-let Stringifier = require('./stringifier')
-let stringify = require('./stringify')
-let { isClean, my } = require('./symbols')
-
-function cloneNode(obj, parent) {
-  let cloned = new obj.constructor()
-  // An explicit stack instead of recursive calls to survive deeply
-  // nested trees. Each entry is [source, its clone, clone's parent].
-  let stack = [[obj, cloned, parent]]
-
-  while (stack.length > 0) {
-    let [source, target, targetParent] = stack.pop()
-    for (let i in source) {
-      if (!Object.prototype.hasOwnProperty.call(source, i)) {
-        /* c8 ignore next 2 */
-        continue
-      }
-      if (i === 'proxyCache') continue
-      let value = source[i]
-      let type = typeof value
-
-      if (i === 'parent' && type === 'object') {
-        if (targetParent) target[i] = targetParent
-      } else if (i === 'source') {
-        target[i] = value
-      } else if (Array.isArray(value)) {
-        let children = []
-        target[i] = children
-        for (let j of value) {
-          let childClone = new j.constructor()
-          children.push(childClone)
-          stack.push([j, childClone, target])
+import { computeLineStarts, NodeFlags, SyntaxKind, TokenFlags, } from "../../ast/index.js";
+import { MsgpackReader } from "./msgpack.js";
+import { RemoteNode, RemoteNodeList, } from "./node.generated.js";
+import { NODE_EXTENDED_DATA_MASK, } from "./node.infrastructure.js";
+import { HEADER_OFFSET_EXTENDED_DATA, HEADER_OFFSET_NODES, HEADER_OFFSET_STRING_TABLE, HEADER_OFFSET_STRING_TABLE_OFFSETS, HEADER_OFFSET_STRUCTURED_DATA, KIND_NODE_LIST, NODE_LEN, NODE_OFFSET_KIND, NODE_OFFSET_PARENT, } from "./protocol.js";
+import { Wtf8Decoder } from "./wtf8.js";
+// Re-export everything consumers need from the other two files.
+export { RemoteNode, RemoteNodeList } from "./node.generated.js";
+export { readParseOptionsKey, readSourceFileHash, RemoteNodeBase } from "./node.infrastructure.js";
+// ═══════════════════════════════════════════════════════════════════════════
+// RemoteSourceFile
+// ═══════════════════════════════════════════════════════════════════════════
+const NO_STRUCTURED_DATA = 0xFFFFFFFF;
+export class RemoteSourceFile extends RemoteNode {
+    nodes;
+    _offsetNodes;
+    _offsetStringTableOffsets;
+    _offsetStringTable;
+    _offsetExtendedData;
+    _offsetStructuredData;
+    _decoder;
+    _timing;
+    _lineStarts;
+    _cachedText;
+    _cachedReferencedFiles;
+    _cachedTypeReferenceDirectives;
+    _cachedLibReferenceDirectives;
+    _cachedImports;
+    _cachedModuleAugmentations;
+    _cachedAmbientModuleNames;
+    constructor(data, decoder, timing) {
+        const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
+        const offsetNodes = view.getUint32(HEADER_OFFSET_NODES, true);
+        super(view, 1, undefined, undefined, offsetNodes);
+        this._sourceFile = this;
+        this._offsetNodes = offsetNodes;
+        this._offsetStringTableOffsets = view.getUint32(HEADER_OFFSET_STRING_TABLE_OFFSETS, true);
+        this._offsetStringTable = view.getUint32(HEADER_OFFSET_STRING_TABLE, true);
+        this._offsetExtendedData = view.getUint32(HEADER_OFFSET_EXTENDED_DATA, true);
+        this._offsetStructuredData = view.getUint32(HEADER_OFFSET_STRUCTURED_DATA, true);
+        this._decoder = decoder;
+        this._timing = timing;
+        this.nodes = Array((view.byteLength - offsetNodes) / NODE_LEN);
+        this.nodes[1] = this;
+        // Every node slot is materializable on demand except the nil sentinel at
+        // index 0 and the source-file node at index 1, which is pre-materialized.
+        timing?.recordSourceFileFetched(Math.max(0, this.nodes.length - 2));
+    }
+    readFileReferences(structuredDataOffset) {
+        if (structuredDataOffset === NO_STRUCTURED_DATA) {
+            return [];
         }
-      } else {
-        if (type === 'object' && value !== null) {
-          let valueClone = new value.constructor()
-          stack.push([value, valueClone, undefined])
-          value = valueClone
+        const buf = new Uint8Array(this.view.buffer, this.view.byteOffset, this.view.byteLength);
+        const reader = new MsgpackReader(buf, this._offsetStructuredData + structuredDataOffset);
+        const count = reader.readArrayHeader();
+        const result = [];
+        for (let i = 0; i < count; i++) {
+            reader.readArrayHeader(); // 5-element tuple
+            const pos = reader.readUint();
+            const end = reader.readUint();
+            const fileName = reader.readString();
+            const resolutionMode = reader.readUint();
+            const preserve = reader.readBool();
+            result.push({ pos, end, fileName, resolutionMode, preserve });
         }
-        target[i] = value
-      }
+        return result;
     }
-  }
-
-  return cloned
-}
-
-function sourceOffset(inputCSS, position) {
-  // Not all custom syntaxes support `offset` in `source.start` and `source.end`
-  if (position && typeof position.offset !== 'undefined') {
-    return position.offset
-  }
-
-  let column = 1
-  let line = 1
-  let offset = 0
-
-  for (let i = 0; i < inputCSS.length; i++) {
-    if (line === position.line && column === position.column) {
-      offset = i
-      break
-    }
-
-    if (inputCSS[i] === '\n') {
-      column = 1
-      line += 1
-    } else {
-      column += 1
-    }
-  }
-
-  return offset
-}
-
-class Node {
-  get proxyOf() {
-    return this
-  }
-
-  constructor(defaults = {}) {
-    this.raws = {}
-    this[isClean] = false
-    this[my] = true
-
-    for (let name of Object.keys(defaults)) {
-      if (name === '__proto__') continue
-      if (name === 'nodes') {
-        this.nodes = []
-        for (let node of defaults[name]) {
-          // Clone only nodes that already belong to another tree, so passing a
-          // freshly created (parent-less) node adopts that instance instead of
-          // a copy and keeps the caller's reference usable. See #1987.
-          if (typeof node.clone === 'function' && node.parent) {
-            this.append(node.clone())
-          } else {
-            this.append(node)
-          }
+    readNodeIndexArray(structuredDataOffset) {
+        if (structuredDataOffset === NO_STRUCTURED_DATA) {
+            return [];
         }
-      } else {
-        this[name] = defaults[name]
-      }
-    }
-  }
-
-  addToError(error) {
-    error.postcssNode = this
-    if (error.stack && this.source && /\n\s{4}at /.test(error.stack)) {
-      let s = this.source
-      error.stack = error.stack.replace(
-        /\n\s{4}at /,
-        `$&${s.input.from}:${s.start.line}:${s.start.column}$&`
-      )
-    }
-    return error
-  }
-
-  after(add) {
-    this.parent.insertAfter(this, add)
-    return this
-  }
-
-  assign(overrides = {}) {
-    for (let name in overrides) {
-      this[name] = overrides[name]
-    }
-    return this
-  }
-
-  before(add) {
-    this.parent.insertBefore(this, add)
-    return this
-  }
-
-  cleanRaws(keepBetween) {
-    delete this.raws.before
-    delete this.raws.after
-    if (!keepBetween) delete this.raws.between
-  }
-
-  clone(overrides = {}) {
-    let cloned = cloneNode(this)
-    for (let name in overrides) {
-      cloned[name] = overrides[name]
-    }
-    return cloned
-  }
-
-  cloneAfter(overrides = {}) {
-    let cloned = this.clone(overrides)
-    this.parent.insertAfter(this, cloned)
-    return cloned
-  }
-
-  cloneBefore(overrides = {}) {
-    let cloned = this.clone(overrides)
-    this.parent.insertBefore(this, cloned)
-    return cloned
-  }
-
-  error(message, opts = {}) {
-    if (this.source) {
-      let { end, start } = this.rangeBy(opts)
-      return this.source.input.error(
-        message,
-        { column: start.column, line: start.line },
-        { column: end.column, line: end.line },
-        opts
-      )
-    }
-    return new CssSyntaxError(message)
-  }
-
-  getProxyProcessor() {
-    return {
-      get(node, prop) {
-        if (prop === 'proxyOf') {
-          return node
-        } else if (prop === 'root') {
-          return () => node.root().toProxy()
-        } else {
-          return node[prop]
+        const buf = new Uint8Array(this.view.buffer, this.view.byteOffset, this.view.byteLength);
+        const reader = new MsgpackReader(buf, this._offsetStructuredData + structuredDataOffset);
+        const count = reader.readArrayHeader();
+        const result = [];
+        for (let i = 0; i < count; i++) {
+            const nodeIndex = reader.readUint();
+            result.push(this.getOrCreateNodeAtIndex(nodeIndex));
         }
-      },
-
-      set(node, prop, value) {
-        if (node[prop] === value) return true
-        node[prop] = value
-        if (
-          prop === 'prop' ||
-          prop === 'value' ||
-          prop === 'name' ||
-          prop === 'params' ||
-          prop === 'important' ||
-          /* c8 ignore next */
-          prop === 'text'
-        ) {
-          node.markDirty()
+        return result;
+    }
+    readStringArray(structuredDataOffset) {
+        if (structuredDataOffset === NO_STRUCTURED_DATA) {
+            return [];
         }
-        return true
-      }
-    }
-  }
-
-  /* c8 ignore next 3 */
-  markClean() {
-    this[isClean] = true
-  }
-
-  markDirty() {
-    if (this[isClean]) {
-      this[isClean] = false
-      let next = this
-      while ((next = next.parent)) {
-        next[isClean] = false
-      }
-    }
-  }
-
-  next() {
-    if (!this.parent) return undefined
-    let index = this.parent.index(this)
-    return this.parent.nodes[index + 1]
-  }
-
-  positionBy(opts = {}) {
-    let inputString =
-      'document' in this.source.input
-        ? this.source.input.document
-        : this.source.input.css
-    let pos = {
-      column: this.source.start.column,
-      line: this.source.start.line,
-      offset: sourceOffset(inputString, this.source.start)
-    }
-    if (opts.index) {
-      pos = this.positionInside(opts.index)
-    } else if (opts.word) {
-      let stringRepresentation = inputString.slice(
-        sourceOffset(inputString, this.source.start),
-        sourceOffset(inputString, this.source.end)
-      )
-      let index = stringRepresentation.indexOf(opts.word)
-      if (index !== -1) pos = this.positionInside(index)
-    }
-    return pos
-  }
-
-  positionInside(index) {
-    let column = this.source.start.column
-    let line = this.source.start.line
-    let inputString =
-      'document' in this.source.input
-        ? this.source.input.document
-        : this.source.input.css
-    let offset = sourceOffset(inputString, this.source.start)
-    let end = offset + index
-
-    for (let i = offset; i < end; i++) {
-      if (inputString[i] === '\n') {
-        column = 1
-        line += 1
-      } else {
-        column += 1
-      }
-    }
-
-    return { column, line, offset: end }
-  }
-
-  prev() {
-    if (!this.parent) return undefined
-    let index = this.parent.index(this)
-    return this.parent.nodes[index - 1]
-  }
-
-  rangeBy(opts = {}) {
-    let inputString =
-      'document' in this.source.input
-        ? this.source.input.document
-        : this.source.input.css
-    let start = {
-      column: this.source.start.column,
-      line: this.source.start.line,
-      offset: sourceOffset(inputString, this.source.start)
-    }
-    let end = this.source.end
-      ? {
-          column: this.source.end.column + 1,
-          line: this.source.end.line,
-          offset:
-            typeof this.source.end.offset === 'number'
-              ? // `source.end.offset` is exclusive, so we don't need to add 1
-                this.source.end.offset
-              : // Since line/column in this.source.end is inclusive,
-                // the `sourceOffset(... , this.source.end)` returns an inclusive offset.
-                // So, we add 1 to convert it to exclusive.
-                sourceOffset(inputString, this.source.end) + 1
+        const buf = new Uint8Array(this.view.buffer, this.view.byteOffset, this.view.byteLength);
+        const reader = new MsgpackReader(buf, this._offsetStructuredData + structuredDataOffset);
+        const count = reader.readArrayHeader();
+        const result = [];
+        for (let i = 0; i < count; i++) {
+            result.push(reader.readString());
         }
-      : {
-          column: start.column + 1,
-          line: start.line,
-          offset: start.offset + 1
-        }
-
-    if (opts.word) {
-      let stringRepresentation = inputString.slice(
-        sourceOffset(inputString, this.source.start),
-        sourceOffset(inputString, this.source.end)
-      )
-      let index = stringRepresentation.indexOf(opts.word)
-      if (index !== -1) {
-        start = this.positionInside(index)
-        end = this.positionInside(index + opts.word.length)
-      }
-    } else {
-      if (opts.start) {
-        start = {
-          column: opts.start.column,
-          line: opts.start.line,
-          offset: sourceOffset(inputString, opts.start)
-        }
-      } else if (typeof opts.index === 'number') {
-        start = this.positionInside(opts.index)
-      }
-
-      if (opts.end) {
-        end = {
-          column: opts.end.column,
-          line: opts.end.line,
-          offset: sourceOffset(inputString, opts.end)
-        }
-      } else if (typeof opts.endIndex === 'number') {
-        end = this.positionInside(opts.endIndex)
-      } else if (typeof opts.index === 'number') {
-        end = this.positionInside(opts.index + 1)
-      }
+        return result;
     }
-
-    if (
-      end.line < start.line ||
-      (end.line === start.line && end.column <= start.column)
-    ) {
-      end = {
-        column: start.column + 1,
-        line: start.line,
-        offset: start.offset + 1
-      }
-    }
-
-    return { end, start }
-  }
-
-  raw(prop, defaultType) {
-    let str = new Stringifier()
-    return str.raw(this, prop, defaultType)
-  }
-
-  remove() {
-    if (this.parent) {
-      this.parent.removeChild(this)
-    }
-    this.parent = undefined
-    return this
-  }
-
-  replaceWith(...nodes) {
-    if (this.parent) {
-      let bookmark = this
-      let foundSelf = false
-      for (let node of nodes) {
-        if (node === this) {
-          foundSelf = true
-        } else if (foundSelf) {
-          this.parent.insertAfter(bookmark, node)
-          bookmark = node
-        } else {
-          this.parent.insertBefore(bookmark, node)
-        }
-      }
-
-      if (!foundSelf) {
-        this.remove()
-      }
-    }
-
-    return this
-  }
-
-  root() {
-    let result = this
-    while (result.parent && result.parent.type !== 'document') {
-      result = result.parent
-    }
-    return result
-  }
-
-  toJSON(_, inputs) {
-    let emitInputs = inputs == null
-    inputs = inputs || new Map()
-
-    // A worklist instead of recursive `toJSON()` calls to survive deeply
-    // nested trees. Each entry converts one node and writes the result
-    // into the already converted parent by [holder, key].
-    let holderOfRoot = []
-    let queue = [[this, holderOfRoot, 0]]
-
-    for (let step = 0; step < queue.length; step++) {
-      let [node, holder, key] = queue[step]
-      let fixed = {}
-      holder[key] = fixed
-
-      for (let name in node) {
-        if (!Object.prototype.hasOwnProperty.call(node, name)) {
-          /* c8 ignore next 2 */
-          continue
-        }
-        if (name === 'parent' || name === 'proxyCache') continue
-        let value = node[name]
-
-        if (Array.isArray(value)) {
-          let fixedArray = []
-          fixed[name] = fixedArray
-          for (let i = 0; i < value.length; i++) {
-            let item = value[i]
-            if (typeof item === 'object' && item.toJSON) {
-              if (item.toJSON === Node.prototype.toJSON) {
-                queue.push([item, fixedArray, i])
-              } else {
-                fixedArray[i] = item.toJSON(null, inputs)
-              }
-            } else {
-              fixedArray[i] = item
+    /** @internal */
+    getOrCreateNodeAtIndex(index) {
+        let node = this.nodes[index];
+        if (!node) {
+            // Resolve the real parent so that nodes looked up directly by index (e.g. via
+            // NodeHandle.resolve) report the correct `parent`, rather than always pointing at
+            // the source file. The stored parent index can refer to a synthetic NodeList
+            // container; skip those to mirror normal traversal, where list elements take the
+            // list's parent. The walk terminates at the source file, which occupies index 1
+            // and is already cached.
+            let parentIndex = this.view.getUint32(this._offsetNodes + index * NODE_LEN + NODE_OFFSET_PARENT, true);
+            while (parentIndex !== index &&
+                this.view.getUint32(this._offsetNodes + parentIndex * NODE_LEN + NODE_OFFSET_KIND, true) === KIND_NODE_LIST) {
+                parentIndex = this.view.getUint32(this._offsetNodes + parentIndex * NODE_LEN + NODE_OFFSET_PARENT, true);
             }
-          }
-        } else if (typeof value === 'object' && value.toJSON) {
-          if (value.toJSON === Node.prototype.toJSON) {
-            queue.push([value, fixed, name])
-          } else {
-            fixed[name] = value.toJSON(null, inputs)
-          }
-        } else if (name === 'source') {
-          if (value == null) continue
-          let inputId = inputs.get(value.input)
-          if (inputId == null) {
-            inputId = inputs.size
-            inputs.set(value.input, inputId)
-          }
-          fixed[name] = {
-            end: value.end,
-            inputId,
-            start: value.start
-          }
-        } else {
-          fixed[name] = value
+            const parent = parentIndex === index ? this : this.getOrCreateNodeAtIndex(parentIndex);
+            node = new RemoteNode(this.view, index, parent, this, this._offsetNodes);
+            this.nodes[index] = node;
+            this._timing?.recordMaterialization();
         }
-      }
+        return node;
     }
-
-    let fixed = holderOfRoot[0]
-    if (emitInputs) {
-      fixed.inputs = [...inputs.keys()].map(input => input.toJSON())
+    // ═══ SourceFile-specific extended data getters ═══
+    get extendedDataOffset() {
+        return this._offsetExtendedData + (this.data & NODE_EXTENDED_DATA_MASK);
     }
-
-    return fixed
-  }
-
-  toProxy() {
-    if (!this.proxyCache) {
-      this.proxyCache = new Proxy(this, this.getProxyProcessor())
+    get fileName() {
+        const stringIndex = this.view.getUint32(this.extendedDataOffset + 4, true);
+        return this.getString(stringIndex);
     }
-    return this.proxyCache
-  }
-
-  toString(stringifier = stringify) {
-    if (stringifier.stringify) stringifier = stringifier.stringify
-    let result = ''
-    stringifier(this, i => {
-      result += i
-    })
-    return result
-  }
-
-  warn(result, text, opts = {}) {
-    let data = { node: this }
-    for (let i in opts) data[i] = opts[i]
-    return result.warn(text, data)
-  }
+    get path() {
+        const stringIndex = this.view.getUint32(this.extendedDataOffset + 8, true);
+        return this.getString(stringIndex);
+    }
+    get languageVariant() {
+        return this.view.getUint32(this.extendedDataOffset + 12, true);
+    }
+    get scriptKind() {
+        return this.view.getUint32(this.extendedDataOffset + 16, true);
+    }
+    get referencedFiles() {
+        if (this._cachedReferencedFiles !== undefined)
+            return this._cachedReferencedFiles;
+        const offset = this.view.getUint32(this.extendedDataOffset + 20, true);
+        const files = this.readFileReferences(offset);
+        this._cachedReferencedFiles = files;
+        return files;
+    }
+    get typeReferenceDirectives() {
+        if (this._cachedTypeReferenceDirectives !== undefined)
+            return this._cachedTypeReferenceDirectives;
+        const offset = this.view.getUint32(this.extendedDataOffset + 24, true);
+        const directives = this.readFileReferences(offset);
+        this._cachedTypeReferenceDirectives = directives;
+        return directives;
+    }
+    get libReferenceDirectives() {
+        if (this._cachedLibReferenceDirectives !== undefined)
+            return this._cachedLibReferenceDirectives;
+        const offset = this.view.getUint32(this.extendedDataOffset + 28, true);
+        const directives = this.readFileReferences(offset);
+        this._cachedLibReferenceDirectives = directives;
+        return directives;
+    }
+    get imports() {
+        if (this._cachedImports !== undefined)
+            return this._cachedImports;
+        const offset = this.view.getUint32(this.extendedDataOffset + 32, true);
+        const imports = this.readNodeIndexArray(offset);
+        this._cachedImports = imports;
+        return imports;
+    }
+    get moduleAugmentations() {
+        if (this._cachedModuleAugmentations !== undefined)
+            return this._cachedModuleAugmentations;
+        const offset = this.view.getUint32(this.extendedDataOffset + 36, true);
+        const moduleAugmentations = this.readNodeIndexArray(offset);
+        this._cachedModuleAugmentations = moduleAugmentations;
+        return moduleAugmentations;
+    }
+    get ambientModuleNames() {
+        if (this._cachedAmbientModuleNames !== undefined)
+            return this._cachedAmbientModuleNames;
+        const offset = this.view.getUint32(this.extendedDataOffset + 40, true);
+        const names = this.readStringArray(offset);
+        this._cachedAmbientModuleNames = names;
+        return names;
+    }
+    get externalModuleIndicator() {
+        const nodeIndex = this.view.getUint32(this.extendedDataOffset + 44, true);
+        if (nodeIndex === 0)
+            return undefined;
+        if (nodeIndex === this.index)
+            return true;
+        return this.getOrCreateNodeAtIndex(nodeIndex);
+    }
+    get isDeclarationFile() {
+        return (this.flags & NodeFlags.Ambient) !== 0;
+    }
+    get text() {
+        if (this._cachedText !== undefined)
+            return this._cachedText;
+        const text = super.text;
+        this._cachedText = text;
+        return text;
+    }
+    // ═══ Line/character position mapping ═══
+    getLineStarts() {
+        return this._lineStarts ??= computeLineStarts(this.text ?? "");
+    }
+    getLineAndCharacterOfPosition(position) {
+        const lineStarts = this.getLineStarts();
+        const line = computeLineOfPosition(lineStarts, position);
+        return { line, character: position - lineStarts[line] };
+    }
+    getPositionOfLineAndCharacter(line, character) {
+        const lineStarts = this.getLineStarts();
+        if (line < 0 || line >= lineStarts.length) {
+            throw new Error(`Bad line number. Line: ${line}, lineStarts.length: ${lineStarts.length}`);
+        }
+        return lineStarts[line] + character;
+    }
 }
-
-module.exports = Node
-Node.default = Node
+/**
+ * Find the 0-based line number containing the given position via binary search.
+ * Assumes the first line starts at position 0 and `position` is non-negative.
+ */
+function computeLineOfPosition(lineStarts, position) {
+    let low = 0;
+    let high = lineStarts.length - 1;
+    while (low <= high) {
+        const middle = low + ((high - low) >> 1);
+        const value = lineStarts[middle];
+        if (value < position) {
+            low = middle + 1;
+        }
+        else if (value > position) {
+            high = middle - 1;
+        }
+        else {
+            return middle;
+        }
+    }
+    return low - 1;
+}
+/**
+ * Find a descendant node at a specific position with matching kind and end position.
+ */
+export function findDescendant(root, pos, end, kind) {
+    if (root.pos === pos && root.end === end && root.kind === kind) {
+        return root;
+    }
+    // Search children
+    let result;
+    root.forEachChild(child => {
+        if (result)
+            return result; // Already found
+        // Only search in children that could contain our target
+        if (child.pos <= pos && child.end >= end) {
+            result = findDescendant(child, pos, end, kind);
+        }
+        return undefined;
+    });
+    return result;
+}
+/**
+ * Parse a node handle string into its components.
+ * Handle format: "index.kind.path" where path may contain dots.
+ */
+export function parseNodeHandle(handle) {
+    const firstDot = handle.indexOf(".");
+    if (firstDot === -1) {
+        throw new Error(`Invalid node handle: ${handle}`);
+    }
+    const secondDot = handle.indexOf(".", firstDot + 1);
+    if (secondDot === -1) {
+        throw new Error(`Invalid node handle: ${handle}`);
+    }
+    return {
+        index: parseInt(handle.slice(0, firstDot), 10),
+        kind: parseInt(handle.slice(firstDot + 1, secondDot), 10),
+        path: handle.slice(secondDot + 1),
+    };
+}
+/**
+ * Decode binary-encoded AST data into a Node.
+ * Works for any binary-encoded node, including synthetic nodes
+ * (e.g. from typeToTypeNode) that don't have a source file.
+ */
+export function decodeNode(data) {
+    const sf = new RemoteSourceFile(data, new Wtf8Decoder());
+    return sf;
+}
+/**
+ * Get the unique ID string for a remote node.
+ * Throws if the node is not a RemoteNode (i.e. not decoded from binary data).
+ */
+export function getNodeId(node) {
+    if (!(node instanceof RemoteNode)) {
+        throw new Error("getNodeId requires a RemoteNode");
+    }
+    return node.id;
+}
+//# sourceMappingURL=node.js.map

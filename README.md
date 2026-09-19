@@ -1,60 +1,25 @@
-# `react-dom`
+# tinyglobby
 
-This package serves as the entry point to the DOM and server renderers for React. It is intended to be paired with the generic React package, which is shipped as `react` to npm.
+[![npm version](https://img.shields.io/npm/v/tinyglobby.svg?maxAge=3600)](https://npmjs.com/package/tinyglobby)
+[![weekly downloads](https://img.shields.io/npm/dw/tinyglobby.svg?maxAge=3600)](https://npmjs.com/package/tinyglobby)
 
-## Installation
+A fast and minimal alternative to globby and fast-glob, meant to behave the same way.
 
-```sh
-npm install react react-dom
-```
+Both globby and fast-glob present some behavior no other globbing lib has,
+which makes it hard to manually replace with something smaller and better.
+
+This library uses only two subdependencies, compared to `globby`'s [23](https://npmgraph.js.org/?q=globby@16.2.0)
+and `fast-glob`'s [17](https://npmgraph.js.org/?q=fast-glob@3.3.3).
 
 ## Usage
 
-### In the browser
-
 ```js
-import { createRoot } from 'react-dom/client';
+import { glob, globSync } from 'tinyglobby';
 
-function App() {
-  return <div>Hello World</div>;
-}
-
-const root = createRoot(document.getElementById('root'));
-root.render(<App />);
+await glob(['files/*.ts', '!**/*.d.ts'], { cwd: 'src' });
+globSync('src/**/*.ts', { ignore: '**/*.d.ts' });
 ```
 
-### On the server
+## Documentation
 
-```js
-import { renderToPipeableStream } from 'react-dom/server';
-
-function App() {
-  return <div>Hello World</div>;
-}
-
-function handleRequest(res) {
-  // ... in your server handler ...
-  const stream = renderToPipeableStream(<App />, {
-    onShellReady() {
-      res.statusCode = 200;
-      res.setHeader('Content-type', 'text/html');
-      stream.pipe(res);
-    },
-    // ...
-  });
-}
-```
-
-## API
-
-### `react-dom`
-
-See https://react.dev/reference/react-dom
-
-### `react-dom/client`
-
-See https://react.dev/reference/react-dom/client
-
-### `react-dom/server`
-
-See https://react.dev/reference/react-dom/server
+Visit https://superchupu.dev/tinyglobby to read the full documentation.

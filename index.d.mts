@@ -1,4 +1,148 @@
-import { a as RolldownLog, i as RolldownError, n as LogLevelOption, o as RolldownLogWithString, r as LogOrStringHandler, t as LogLevel } from "./shared/logging-xuHO4mAy.mjs";
-import { U as PreRenderedChunk } from "./shared/binding-BTa6BPQe.mjs";
-import { A as ResolvedId, At as ChunkFileNamesFunction, B as ExistingRawSourceMap, Bt as MinifyOptions, C as ParallelPluginHooks, Ct as RolldownBuild, D as ResolveFileUrlArgs, Dt as AdvancedChunksGroup, E as PluginMeta, Et as AddonFunction, Ft as CommentsOptions, G as EmittedAsset, Gt as PartialNull, H as OutputBundle, Ht as OutputOptions, It as GeneratedCodeOptions, J as EmittedPrebuiltChunk, Jt as OutputChunk, K as EmittedChunk, L as RUNTIME_MODULE_ID, Lt as GeneratedCodePreset, M as RolldownPluginOption, Mt as CodeSplittingGroup, N as SourceDescription, Nt as CodeSplittingNameFunction, O as ResolveIdExtraOptions, Ot as AdvancedChunksOptions, P as TransformResult, Pt as CodeSplittingOptions, Q as DefineParallelPluginResult, Qt as SourceMap, R as VERSION, Rt as GlobalsFunction, S as ObjectHook, St as rolldown, T as Plugin, Tt as build, U as TreeshakingOptions, Ut as PreRenderedAsset, V as SourceMapInput, Vt as ModuleFormat, W as TransformPluginContext, X as PluginContext, Xt as RenderedModule, Y as GetModuleInfo, Yt as RenderedChunk, Z as PluginContextResolveOptions, Zt as RolldownOutput, _ as HookFilterExtension, _t as watch, a as ChunkOptimizationOptions, at as BufferEncoding, b as ModuleOptions, bt as RolldownWatcherWatcherEventMap, c as InputOption, ct as RolldownFsModule, d as OptimizationOptions, dt as NormalizedInputOptions, en as ModuleInfo, et as MinimalPluginContext, f as WatcherFileWatcherOptions, ft as TransformOptions, g as FunctionPluginHooks, gt as RolldownMagicString, h as CustomPluginOptions, ht as WarningHandlerWithDefault, i as RolldownOptions, it as ModuleTypeFilter, j as RolldownPlugin, jt as ChunkingContext, k as ResolveIdResult, kt as BuiltinModuleTag, l as InputOptions, lt as InternalModuleFormat, m as AsyncPluginHooks, mt as LoggingFunction, n as RolldownOptionsFunction, nt as GeneralHookFilter, o as ExternalOption, ot as RolldownDirectoryEntry, p as WatcherOptions, pt as ChecksOptions, q as EmittedFile, qt as OutputAsset, r as defineConfig, rt as HookFilter, s as ExternalOptionFunction, st as RolldownFileStats, t as ConfigExport, tn as SourcemapIgnoreListOption, tt as PluginContextMeta, u as ModuleTypes, ut as NormalizedOutputOptions, v as ImportKind, vt as RolldownWatcher, w as PartialResolvedId, wt as BuildOptions, x as ModuleType, xt as WatchOptions, y as LoadResult, yt as RolldownWatcherEvent, z as BundleError, zt as ManglePropertiesOptions } from "./shared/define-config-BFdLpVut.mjs";
-export { type AddonFunction, type AdvancedChunksGroup, type AdvancedChunksOptions, type AsyncPluginHooks, type BufferEncoding, type BuildOptions, type BuiltinModuleTag, type BundleError, type ChecksOptions, type ChunkFileNamesFunction, type ChunkOptimizationOptions, type ChunkingContext, type CodeSplittingGroup, type CodeSplittingNameFunction, type CodeSplittingOptions, type CommentsOptions, type ConfigExport, type CustomPluginOptions, type DefineParallelPluginResult, type EmittedAsset, type EmittedChunk, type EmittedFile, type EmittedPrebuiltChunk, type ExistingRawSourceMap, type ExternalOption, type ExternalOptionFunction, type FunctionPluginHooks, type GeneralHookFilter, type GeneratedCodeOptions, type GeneratedCodePreset, type GetModuleInfo, type GlobalsFunction, type HookFilter, type HookFilterExtension, type ImportKind, type InputOption, type InputOptions, type InternalModuleFormat, type LoadResult, type LogLevel, type LogLevelOption, type LogOrStringHandler, type LoggingFunction, type ManglePropertiesOptions, type MinifyOptions, type MinimalPluginContext, type ModuleFormat, type ModuleInfo, type ModuleOptions, type ModuleType, type ModuleTypeFilter, type ModuleTypes, type NormalizedInputOptions, type NormalizedOutputOptions, type ObjectHook, type OptimizationOptions, type OutputAsset, type OutputBundle, type OutputChunk, type OutputOptions, type ParallelPluginHooks, type PartialNull, type PartialResolvedId, type Plugin, type PluginContext, type PluginContextMeta, type PluginContextResolveOptions, type PluginMeta, type PreRenderedAsset, type PreRenderedChunk, RUNTIME_MODULE_ID, type RenderedChunk, type RenderedModule, type ResolveFileUrlArgs, type ResolveIdExtraOptions, type ResolveIdResult, type ResolvedId, type RolldownBuild, type RolldownDirectoryEntry, type RolldownError, type RolldownError as RollupError, type RolldownFileStats, type RolldownFsModule, type RolldownLog, type RolldownLog as RollupLog, type RolldownLogWithString, type RolldownLogWithString as RollupLogWithString, RolldownMagicString, type RolldownOptions, type RolldownOptionsFunction, type RolldownOutput, type RolldownPlugin, type RolldownPluginOption, type RolldownWatcher, type RolldownWatcherEvent, type RolldownWatcherWatcherEventMap, type SourceDescription, type SourceMap, type SourceMapInput, type SourcemapIgnoreListOption, type TransformOptions, type TransformPluginContext, type TransformResult, type TreeshakingOptions, VERSION, type WarningHandlerWithDefault, type WatchOptions, type WatcherFileWatcherOptions, type WatcherOptions, build, defineConfig, rolldown, watch };
+import { FSLike } from "fdir";
+
+//#region src/types.d.ts
+type FileSystemAdapter = Partial<FSLike>;
+interface GlobOptions {
+  /**
+  * Whether to return absolute paths. Disable to have relative paths.
+  * @default false
+  */
+  absolute?: boolean;
+  /**
+  * Enables support for brace expansion syntax, like `{a,b}` or `{1..9}`.
+  * @default true
+  */
+  braceExpansion?: boolean;
+  /**
+  * Whether to match in case-sensitive mode.
+  * @default true
+  */
+  caseSensitiveMatch?: boolean;
+  /**
+  * The working directory in which to search. Results will be returned relative to this directory, unless
+  * {@link absolute} is set.
+  *
+  * It is important to avoid globbing outside this directory when possible, even with absolute paths enabled,
+  * as doing so can harm performance due to having to recalculate relative paths.
+  * @default process.cwd()
+  */
+  cwd?: string | URL;
+  /**
+  * Logs useful debug information. Meant for development purposes. Logs can change at any time.
+  * @default false
+  */
+  debug?: boolean;
+  /**
+  * Maximum directory depth to crawl.
+  * @default Infinity
+  */
+  deep?: number;
+  /**
+  * Whether to return entries that start with a dot, like `.gitignore` or `.prettierrc`.
+  * @default false
+  */
+  dot?: boolean;
+  /**
+  * Whether to automatically expand directory patterns.
+  *
+  * Important to disable if migrating from [`fast-glob`](https://github.com/mrmlnc/fast-glob).
+  * @default true
+  */
+  expandDirectories?: boolean;
+  /**
+  * Enables support for extglobs, like `+(pattern)`.
+  * @default true
+  */
+  extglob?: boolean;
+  /**
+  * Whether to traverse and include symbolic links. Can slightly affect performance.
+  * @default true
+  */
+  followSymbolicLinks?: boolean;
+  /**
+  * An object that overrides `node:fs` functions.
+  * @default import('node:fs')
+  */
+  fs?: FileSystemAdapter;
+  /**
+  * Enables support for matching nested directories with globstars (`**`).
+  * If `false`, `**` behaves exactly like `*`.
+  * @default true
+  */
+  globstar?: boolean;
+  /**
+  * Glob patterns to exclude from the results.
+  * @default []
+  */
+  ignore?: string | readonly string[];
+  /**
+  * Enable to only return directories.
+  * If `true`, disables {@link onlyFiles}.
+  * @default false
+  */
+  onlyDirectories?: boolean;
+  /**
+  * Enable to only return files.
+  * @default true
+  */
+  onlyFiles?: boolean;
+  /**
+  * @deprecated Provide patterns as the first argument instead.
+  */
+  patterns?: string | readonly string[];
+  /**
+  * An `AbortSignal` to abort crawling the file system.
+  * @default undefined
+  */
+  signal?: AbortSignal;
+}
+//#endregion
+//#region src/utils.d.ts
+/**
+* Converts a path to a pattern depending on the platform.
+* Identical to {@link escapePath} on POSIX systems.
+* @see {@link https://superchupu.dev/tinyglobby/documentation#convertPathToPattern}
+*/
+declare const convertPathToPattern: (path: string) => string;
+/**
+* Escapes a path's special characters depending on the platform.
+* @see {@link https://superchupu.dev/tinyglobby/documentation#escapePath}
+*/
+declare const escapePath: (path: string) => string;
+/**
+* Checks if a pattern has dynamic parts.
+*
+* Has a few minor differences with [`fast-glob`](https://github.com/mrmlnc/fast-glob) for better accuracy:
+*
+* - Doesn't necessarily return `false` on patterns that include `\`.
+* - Returns `true` if the pattern includes parentheses, regardless of them representing one single pattern or not.
+* - Returns `true` for unfinished glob extensions i.e. `(h`, `+(h`.
+* - Returns `true` for unfinished brace expansions as long as they include `,` or `..`.
+*
+* @see {@link https://superchupu.dev/tinyglobby/documentation#isDynamicPattern}
+*/
+declare function isDynamicPattern(pattern: string, options?: {
+  caseSensitiveMatch: boolean;
+}): boolean;
+//#endregion
+//#region src/index.d.ts
+/**
+* Asynchronously match files following a glob pattern.
+* @see {@link https://superchupu.dev/tinyglobby/documentation#glob}
+*/
+declare function glob(patterns: string | readonly string[], options?: Omit<GlobOptions, "patterns">): Promise<string[]>;
+/**
+* @deprecated Provide patterns as the first argument instead.
+*/
+declare function glob(options: GlobOptions): Promise<string[]>;
+/**
+* Synchronously match files following a glob pattern.
+* @see {@link https://superchupu.dev/tinyglobby/documentation#globSync}
+*/
+declare function globSync(patterns: string | readonly string[], options?: Omit<GlobOptions, "patterns">): string[];
+/**
+* @deprecated Provide patterns as the first argument instead.
+*/
+declare function globSync(options: GlobOptions): string[];
+//#endregion
+export { type FileSystemAdapter, type GlobOptions, convertPathToPattern, escapePath, glob, globSync, isDynamicPattern };

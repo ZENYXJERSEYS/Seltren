@@ -1,38 +1,7 @@
-import { getRandomBytesAsync } from 'expo-random'
+'use strict';
 
-import { urlAlphabet } from '../url-alphabet/index.js'
-
-let random = getRandomBytesAsync
-
-let customAlphabet = (alphabet, defaultSize = 21) => {
-  let mask = (2 << (31 - Math.clz32((alphabet.length - 1) | 1))) - 1
-
-
-  let step = Math.ceil((1.6 * mask * defaultSize) / alphabet.length)
-
-  let tick = (id, size = defaultSize) =>
-    random(step).then(bytes => {
-      let i = step
-      while (i--) {
-        id += alphabet[bytes[i] & mask] || ''
-        if (id.length >= size) return id
-      }
-      return tick(id, size)
-    })
-
-  return (size = defaultSize) => {
-    if (size <= 0) return Promise.resolve('')
-    return tick('', size)
-  }
+if (process.env.NODE_ENV === 'production') {
+  module.exports = require('./cjs/scheduler.native.production.js');
+} else {
+  module.exports = require('./cjs/scheduler.native.development.js');
 }
-
-let nanoid = (size = 21) =>
-  random((size |= 0)).then(bytes => {
-    let id = ''
-    while (size--) {
-      id += urlAlphabet[bytes[size] & 63]
-    }
-    return id
-  })
-
-export { nanoid, customAlphabet, random }
